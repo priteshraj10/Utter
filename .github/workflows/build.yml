@@ -50,6 +50,7 @@ on:
 
 env:
   TSC_VERSION: "0.9.0"
+  CERT_ID: ""
 
 jobs:
   build:
