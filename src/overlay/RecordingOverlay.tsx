@@ -58,6 +58,7 @@ const RecordingOverlay: React.FC = () => {
   // Overlay placement (top vs bottom of the screen). The Live panel grows downward
   // from a top overlay (oldest line under the pill) and upward from a bottom one.
   const [position, setPosition] = useState<"top" | "bottom">("bottom");
+  const [modeBadge, setModeBadge] = useState<string | null>(null);
   // True once live text overflows the cap. A top overlay fades its top edge only
   // while overflowing, so the resting first line stays crisp flush under the pill.
   const [overflowing, setOverflowing] = useState(false);
@@ -93,6 +94,13 @@ const RecordingOverlay: React.FC = () => {
             setPosition(
               settings.data.overlay_position === "top" ? "top" : "bottom",
             );
+            if (settings.data.translate_to_english) {
+              setModeBadge(t("overlay.modes.translate"));
+            } else if (settings.data.post_process_enabled) {
+              setModeBadge(t("overlay.modes.ai"));
+            } else {
+              setModeBadge(t("overlay.modes.flow"));
+            }
           }
         } catch {
           // Keep the previous/default placement if settings can't be read.
@@ -267,6 +275,7 @@ const RecordingOverlay: React.FC = () => {
       </div>
       {waveform}
       <div className="sbase-r">
+        {modeBadge && <span className="smode-pill">{modeBadge}</span>}
         {showTimer && <span className="stimer">{fmtTime(elapsed)}</span>}
         {showCancel && cancelBtn}
       </div>

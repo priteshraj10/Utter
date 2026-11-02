@@ -1844,6 +1844,51 @@ static SPOKEN_REPLACEMENTS: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new
             "\n- [ ] ",
         ),
         (spoken(r"(?:numbered item|numbered point)"), "\n1. "),
+        (spoken(r"(?:em dash|long dash)"), " — "),
+        (spoken(r"(?:right arrow|arrow)"), " → "),
+        (spoken(r"ellipsis"), "... "),
+    ]
+});
+
+fn emoji_rule(pattern: &str, unicode: &'static str) -> (Regex, &'static str) {
+    let full = format!(r"(?i)\b(?:the\s+)?(?:{pattern})\s+(?:emoji|emoticon|symbol)\b");
+    (
+        RegexBuilder::new(&full)
+            .case_insensitive(true)
+            .build()
+            .expect("valid emoji regex"),
+        unicode,
+    )
+}
+
+static SPOKEN_EMOJIS: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new(|| {
+    vec![
+        emoji_rule(r"fire|flame", "🔥"),
+        emoji_rule(r"rocket", "🚀"),
+        emoji_rule(r"thumbs up|thumb up", "👍"),
+        emoji_rule(r"thumbs down|thumb down", "👎"),
+        emoji_rule(r"heart|red heart", "❤️"),
+        emoji_rule(r"smiley|smiling face|smile", "😊"),
+        emoji_rule(r"laughing|laugh|joy", "😂"),
+        emoji_rule(r"crying|sob|crying face", "😭"),
+        emoji_rule(r"skull|dead", "💀"),
+        emoji_rule(r"party|party popper|celebration", "🎉"),
+        emoji_rule(r"sparkles|sparkle", "✨"),
+        emoji_rule(r"check mark|checkmark|green check", "✅"),
+        emoji_rule(r"eyes|side eyes", "👀"),
+        emoji_rule(r"clap|clapping|applause", "👏"),
+        emoji_rule(r"mind blown|exploding head", "🤯"),
+        emoji_rule(r"shrug", "🤷"),
+        emoji_rule(r"coffee", "☕"),
+        emoji_rule(r"100|hundred", "💯"),
+        emoji_rule(r"folded hands|prayer|praying hands", "🙏"),
+        emoji_rule(r"thinking|thinking face", "🤔"),
+        emoji_rule(r"sunglasses|cool", "😎"),
+        emoji_rule(r"wink|winking face|winking", "😉"),
+        emoji_rule(r"salute|saluting face|saluting", "🫡"),
+        emoji_rule(r"poop", "💩"),
+        emoji_rule(r"star", "⭐"),
+        emoji_rule(r"warning|alert", "⚠️"),
     ]
 });
 
@@ -1885,6 +1930,10 @@ pub fn apply_voice_commands(text: &str) -> String {
     out = PAREN_RE.replace_all(&out, "($1)").into_owned();
 
     for (re, with) in SPOKEN_REPLACEMENTS.iter() {
+        out = re.replace_all(&out, regex::NoExpand(with)).into_owned();
+    }
+
+    for (re, with) in SPOKEN_EMOJIS.iter() {
         out = re.replace_all(&out, regex::NoExpand(with)).into_owned();
     }
     if out != text {
@@ -2976,6 +3025,34 @@ mod tests {
         assert_eq!(
             apply_voice_commands("Click here in parentheses check docs close parenthesis"),
             "Click here (check docs)"
+        );
+    }
+
+    #[test]
+    fn spoken_emojis_expand() {
+        assert_eq!(
+            apply_voice_commands("Great job fire emoji and rocket emoji"),
+            "Great job 🔥 and 🚀"
+        );
+        assert_eq!(
+            apply_voice_commands("Sounds good thumbs up emoji"),
+            "Sounds good 👍"
+        );
+        assert_eq!(
+            apply_voice_commands("We shipped party emoji"),
+            "We shipped 🎉"
+        );
+        assert_eq!(
+            apply_voice_commands("Task done checkmark emoji"),
+            "Task done ✅"
+        );
+        assert_eq!(
+            apply_voice_commands("Thinking face emoji about that"),
+            "🤔 about that"
+        );
+        assert_eq!(
+            apply_voice_commands("Note ellipsis see below"),
+            "Note... see below"
         );
     }
 

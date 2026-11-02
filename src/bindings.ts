@@ -679,6 +679,14 @@ async createNote(title: string, body: string) : Promise<Result<Note, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async createNoteWithAudio(title: string, body: string, audioFile: string | null, audioSeconds: number | null, kind: string | null) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_note_with_audio", { title, body, audioFile, audioSeconds, kind }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async updateNote(id: number, title: string, body: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_note", { id, title, body }) };

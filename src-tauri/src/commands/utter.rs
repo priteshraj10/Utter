@@ -50,6 +50,25 @@ pub fn create_note(
 
 #[tauri::command]
 #[specta::specta]
+pub fn create_note_with_audio(
+    notes: State<'_, Arc<NotesManager>>,
+    title: String,
+    body: String,
+    audio_file: Option<String>,
+    audio_seconds: Option<f64>,
+    kind: Option<String>,
+) -> Result<Note, String> {
+    let k = kind
+        .as_deref()
+        .unwrap_or(crate::managers::notes::kind::VOICE);
+    let s = audio_seconds.unwrap_or(0.0);
+    notes
+        .create(&title, &body, audio_file, s, k)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn update_note(
     notes: State<'_, Arc<NotesManager>>,
     id: i64,

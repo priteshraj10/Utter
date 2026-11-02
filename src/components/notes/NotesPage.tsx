@@ -7,8 +7,9 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { readFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import {
   CalendarDays,
   CheckSquare,
@@ -16,6 +17,7 @@ import {
   Copy,
   FileDown,
   FileText,
+  Headphones,
   ListTodo,
   Loader2,
   MessageCircleQuestion,
@@ -41,6 +43,7 @@ import { formatDateTime } from "@/utils/dateFormat";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
 import { useOsType } from "@/hooks/useOsType";
 import { Button } from "../ui/Button";
+import { AudioPlayer } from "../ui/AudioPlayer";
 import { MarkdownContent } from "../whats-new/MarkdownContent";
 import { copyToClipboard } from "../settings/history/clipboard";
 import { AskNotesPanel } from "./AskNotesPanel";
@@ -138,6 +141,27 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     const result = await commands.listNotes(null);
     if (result.status === "ok") setNotes(result.data);
   }, []);
+
+  const getAudioUrl = useCallback(
+    async (fileName: string) => {
+      try {
+        const result = await commands.getAudioFilePath(fileName);
+        if (result.status === "ok") {
+          if (osType === "linux") {
+            const fileData = await readFile(result.data);
+            const blob = new Blob([fileData], { type: "audio/wav" });
+            return URL.createObjectURL(blob);
+          }
+          return convertFileSrc(result.data, "asset");
+        }
+        return null;
+      } catch (error) {
+        console.error("Failed to get audio file path:", error);
+        return null;
+      }
+    },
+    [osType],
+  );
 
   useEffect(() => {
     load();
@@ -392,7 +416,13 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
 
       const transcriptText =
         res.data.post_processed_text || res.data.transcription_text;
-      const noteRes = await commands.createNote(fileName, transcriptText);
+      const noteRes = await commands.createNoteWithAudio(
+        fileName,
+        transcriptText,
+        res.data.file_name,
+        null,
+        "meeting",
+      );
 
       if (noteRes.status === "error") {
         toast.error(noteRes.error);
@@ -799,6 +829,27 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                     <Trash2 size={14} />
                   </Button>
                 </div>
+
+                {selected.audio_file && (
+                  <div className="flex items-center gap-3 px-4 py-2 border-b border-line bg-surface-1/40">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-ink-3 shrink-0">
+                      <Headphones size={13} className="text-logo-primary" />
+                      <span>{t("notes.audioRecording")}</span>
+                      {selected.audio_seconds > 0 && (
+                        <span className="text-[11px] font-mono text-ink-4">
+                          ({formatDuration(selected.audio_seconds)})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <AudioPlayer
+                        key={selected.audio_file}
+                        onLoadRequest={() => getAudioUrl(selected.audio_file!)}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Summary controls */}
                 <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-line">

@@ -745,6 +745,7 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::get_usage_stats,
             commands::utter::list_notes,
             commands::utter::create_note,
+            commands::utter::create_note_with_audio,
             commands::utter::update_note,
             commands::utter::delete_note,
             commands::utter::summarize_note,
