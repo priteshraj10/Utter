@@ -763,6 +763,8 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::learn_words_from_edit,
             commands::utter::get_frontmost_app,
             commands::utter::get_screen_context,
+            commands::utter::get_dictation_context_memory,
+            commands::utter::clear_dictation_context_memory,
             commands::utter::change_context_awareness_setting,
             commands::initialize_enigo,
             commands::initialize_shortcuts,

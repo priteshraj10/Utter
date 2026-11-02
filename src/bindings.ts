@@ -736,13 +736,19 @@ async setNoteTags(id: number, tags: string[]) : Promise<Result<string[], string>
 /**
  * Answers a question from the user's notes, citing the notes used.
  */
-async askNotes(question: string) : Promise<Result<NotesAnswer, string>> {
+async askNotes(question: string, history?: ChatExchange[] | null) : Promise<Result<NotesAnswer, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("ask_notes", { question }) };
+    return { status: "ok", data: await TAURI_INVOKE("ask_notes", { question, history: history ?? null }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getDictationContextMemory() : Promise<DictationMemoryItem[]> {
+    return await TAURI_INVOKE("get_dictation_context_memory");
+},
+async clearDictationContextMemory() : Promise<void> {
+    await TAURI_INVOKE("clear_dictation_context_memory");
 },
 /**
  * Builds an AI digest of today's dictations and notes as a new note.
@@ -1377,6 +1383,8 @@ export type ChineseScript =
  * Traditional, in Hong Kong's standard forms.
  */
 "traditional_hk"
+export type ChatExchange = { question: string; answer: string }
+export type DictationMemoryItem = { app_name: string; window_title: string | null; text: string; timestamp: number }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type DailyWords = { day: string; words: number }

@@ -31,7 +31,11 @@ export const AskNotesPanel: React.FC<{ onOpenNote: (id: number) => void }> = ({
     const text = q.trim();
     if (!text || asking) return;
     setAsking(true);
-    const result = await commands.askNotes(text);
+    const contextHistory = history.map((h) => ({
+      question: h.question,
+      answer: h.answer.answer,
+    }));
+    const result = await commands.askNotes(text, contextHistory);
     setAsking(false);
     if (result.status === "ok") {
       setHistory((h) => [...h, { question: text, answer: result.data }]);

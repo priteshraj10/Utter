@@ -127,8 +127,23 @@ pub fn set_note_tags(
 pub async fn ask_notes(
     app: AppHandle,
     question: String,
+    history: Option<Vec<crate::utter::ChatExchange>>,
 ) -> Result<crate::actions::NotesAnswer, String> {
-    crate::actions::ask_notes(&app, &question).await
+    crate::actions::ask_notes(&app, &question, history.as_deref().unwrap_or(&[])).await
+}
+
+/// Returns recent dictations from conversational context memory.
+#[tauri::command]
+#[specta::specta]
+pub fn get_dictation_context_memory() -> Vec<crate::utter::DictationMemoryItem> {
+    crate::utter::recent_dictation_memory(None, 10)
+}
+
+/// Clears the rolling dictation context memory.
+#[tauri::command]
+#[specta::specta]
+pub fn clear_dictation_context_memory() {
+    crate::utter::clear_dictation_memory();
 }
 
 /// Builds an AI digest of today's dictations and notes as a new note.

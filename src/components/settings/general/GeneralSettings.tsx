@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   commands,
   events,
+  type DictationMemoryItem,
   type HistoryEntry,
   type ScreenContext,
   type UsageStats,
@@ -115,6 +116,7 @@ const FlowHomeHub: React.FC = () => {
   const [editDraft, setEditDraft] = useState("");
   const [rawMap, setRawMap] = useState<Record<number, boolean>>({});
   const [micLevels, setMicLevels] = useState<number[]>(Array(7).fill(0));
+  const [memory, setMemory] = useState<DictationMemoryItem[]>([]);
 
   useEffect(() => {
     let unlistenFn: (() => void) | null = null;
@@ -145,14 +147,16 @@ const FlowHomeHub: React.FC = () => {
   const promptOptions = prompts.map((p) => ({ value: p.id, label: p.name }));
 
   const loadData = useCallback(async () => {
-    const [statsRes, histRes, ctxRes] = await Promise.all([
+    const [statsRes, histRes, ctxRes, memRes] = await Promise.all([
       commands.getUsageStats(),
       commands.getHistoryEntries(null, 25),
       commands.getScreenContext(),
+      commands.getDictationContextMemory(),
     ]);
     if (statsRes.status === "ok") setStats(statsRes.data);
     if (histRes.status === "ok") setEntries(histRes.data.entries);
     setScreenCtx(ctxRes);
+    setMemory(memRes);
   }, []);
 
   useEffect(() => {
@@ -445,6 +449,23 @@ const FlowHomeHub: React.FC = () => {
                   {noun}
                 </span>
               ))}
+              {memory.length > 0 && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await commands.clearDictationContextMemory();
+                    setMemory([]);
+                    toast.success(t("flow.contextMemoryCleared"));
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 font-medium text-[11px] hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                  title={t("flow.clearContextMemory")}
+                >
+                  <Sparkles size={11} />
+                  <span>
+                    {t("flow.contextMemory")}: {memory.length}
+                  </span>
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button

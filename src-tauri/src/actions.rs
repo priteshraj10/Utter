@@ -276,7 +276,11 @@ pub struct NoteSource {
 }
 
 /// Answers `question` from the user's notes.
-pub(crate) async fn ask_notes(app: &AppHandle, question: &str) -> Result<NotesAnswer, String> {
+pub(crate) async fn ask_notes(
+    app: &AppHandle,
+    question: &str,
+    history: &[crate::utter::ChatExchange],
+) -> Result<NotesAnswer, String> {
     if question.trim().is_empty() {
         return Err("Ask a question first".into());
     }
@@ -304,7 +308,7 @@ pub(crate) async fn ask_notes(app: &AppHandle, question: &str) -> Result<NotesAn
             .into_iter()
             .map(|i| &contexts[i])
             .collect();
-    let prompt = crate::utter::ask_notes_prompt(&picked);
+    let prompt = crate::utter::ask_notes_prompt_with_history(&picked, history);
     let mut answer = run_llm_prompt(&settings, question.trim(), &prompt).await;
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -334,7 +338,7 @@ pub(crate) async fn ask_notes(app: &AppHandle, question: &str) -> Result<NotesAn
             sources,
         })
     } else {
-        let (ans, cited_ids) = crate::utter::local_ask_notes(question.trim(), &picked);
+        let (ans, cited_ids) = crate::utter::local_ask_notes(question.trim(), &picked, history);
         let sources = picked
             .iter()
             .filter(|n| cited_ids.is_empty() || cited_ids.contains(&n.id))
@@ -946,6 +950,14 @@ pub(crate) async fn process_transcription_output_for(
         }
     }
 
+    if !final_text.is_empty() {
+        crate::utter::record_dictation_memory(
+            front_app.map(|a| a.name.clone()).unwrap_or_default(),
+            screen_ctx.as_ref().and_then(|c| c.window_title.clone()),
+            final_text.clone(),
+        );
+    }
+
     ProcessedTranscription {
         final_text,
         post_processed_text,
@@ -985,7 +997,16 @@ async fn run_voice_command(
         utils::redact_text(instruction),
         selection.map_or(0, str::len)
     );
-    let (input, prompt) = crate::utter::command_request(selection, instruction);
+    let fallback_sel: Option<String> = if selection.is_none() {
+        crate::utter::recent_dictation_memory(None, 1)
+            .into_iter()
+            .next()
+            .map(|m| m.text)
+    } else {
+        None
+    };
+    let effective_sel = selection.or(fallback_sel.as_deref());
+    let (input, prompt) = crate::utter::command_request(effective_sel, instruction);
     let mut output = run_llm_prompt(&settings, &input, &prompt).await;
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
