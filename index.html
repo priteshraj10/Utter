@@ -4,10 +4,49 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Utter</title>
+    <script>
+      window.addEventListener("error", function (e) {
+        var el = document.createElement("div");
+        el.style.cssText =
+          "position:fixed;top:0;left:0;right:0;bottom:0;background:#18181b;color:#f87171;padding:24px;font-family:monospace;font-size:13px;z-index:999999;overflow:auto;white-space:pre-wrap;";
+        el.innerHTML =
+          '<h2 style="color:#ef4444;margin-bottom:12px;">JavaScript Error</h2><p style="font-weight:bold;">' +
+          e.message +
+          "</p><pre>" +
+          (e.error ? e.error.stack : "") +
+          "</pre>";
+        document.body.appendChild(el);
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var el = document.createElement("div");
+        el.style.cssText =
+          "position:fixed;top:0;left:0;right:0;bottom:0;background:#18181b;color:#f87171;padding:24px;font-family:monospace;font-size:13px;z-index:999999;overflow:auto;white-space:pre-wrap;";
+        el.innerHTML =
+          '<h2 style="color:#ef4444;margin-bottom:12px;">Unhandled Promise Rejection</h2><pre>' +
+          (e.reason
+            ? e.reason.stack || e.reason.message || e.reason
+            : "Unknown rejection") +
+          "</pre>";
+        document.body.appendChild(el);
+      });
+    </script>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div
+        style="
+          display: flex;
+          height: 100vh;
+          align-items: center;
+          justify-content: center;
+          font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+          color: #888;
+        "
+      >
+        Loading Utter...
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

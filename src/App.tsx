@@ -280,9 +280,15 @@ function App() {
 
         if (currentPlatform === "macos") {
           try {
-            const [hasAccessibility, hasMicrophone] = await Promise.all([
-              checkAccessibilityPermission(),
-              checkMicrophonePermission(),
+            const timeoutPromise = new Promise<[boolean, boolean]>((resolve) =>
+              setTimeout(() => resolve([true, true]), 2500),
+            );
+            const [hasAccessibility, hasMicrophone] = await Promise.race([
+              Promise.all([
+                checkAccessibilityPermission(),
+                checkMicrophonePermission(),
+              ]),
+              timeoutPromise,
             ]);
             if (!hasAccessibility || !hasMicrophone) {
               await revealMainWindowForPermissions();
@@ -377,7 +383,12 @@ function App() {
 
   // Still checking onboarding status
   if (onboardingStep === null) {
-    return null;
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-text select-none">
+        <div className="w-8 h-8 rounded-full border-2 border-logo-primary border-t-transparent animate-spin mb-4" />
+        <p className="text-sm text-ink-3">Loading Utter...</p>
+      </div>
+    );
   }
 
   // Select the content for the current step. The Toaster is rendered once, in a

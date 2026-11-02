@@ -1014,12 +1014,13 @@ pub fn run(cli_args: CliArgs) {
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
-                tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
+                tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("index.html".into()))
                     .title("Utter")
                     .inner_size(utils::MAIN_WINDOW_SIZE.0, utils::MAIN_WINDOW_SIZE.1)
                     .min_inner_size(utils::MAIN_WINDOW_SIZE.0, utils::MAIN_WINDOW_SIZE.1)
                     .resizable(true)
                     .maximizable(true)
+                    .devtools(true)
                     .visible(false);
 
             if let Some(data_dir) = portable::data_dir() {
