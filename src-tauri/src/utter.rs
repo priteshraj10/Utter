@@ -1732,6 +1732,41 @@ pub fn apply_voice_commands(text: &str) -> String {
         out = backtrack_re.replace_all(&out, "$right").into_owned();
     }
 
+    // All caps formatting ("all caps urgent" -> "URGENT")
+    if let Ok(caps_re) = RegexBuilder::new(r"\b(?:all caps|all uppercase)\s+([A-Za-z0-9_'-]+)\b")
+        .case_insensitive(true)
+        .build()
+    {
+        out = caps_re
+            .replace_all(&out, |caps: &regex::Captures| caps[1].to_uppercase())
+            .into_owned();
+    }
+
+    // Hashtags ("hashtag launch" -> "#launch")
+    if let Ok(tag_re) = RegexBuilder::new(r"\b(?:hashtag|hash tag)\s+([A-Za-z0-9_]+)\b")
+        .case_insensitive(true)
+        .build()
+    {
+        out = tag_re.replace_all(&out, "#$1").into_owned();
+    }
+
+    // In quotes ("quote ship it unquote" -> "\"ship it\"")
+    if let Ok(quote_re) =
+        RegexBuilder::new(r"\b(?:quote|in quotes)\s+([^,.]+?)\s*(?:unquote|end quote)\b")
+            .case_insensitive(true)
+            .build()
+    {
+        out = quote_re.replace_all(&out, "\"$1\"").into_owned();
+    }
+
+    // In parentheses ("in parentheses beta test close parenthesis" -> "(beta test)")
+    if let Ok(paren_re) = RegexBuilder::new(r"\b(?:in parentheses|in parenthesis)\s+([^,.]+?)\s*(?:close parenthesis|close parentheses)\b")
+        .case_insensitive(true)
+        .build()
+    {
+        out = paren_re.replace_all(&out, "($1)").into_owned();
+    }
+
     let replacements = [
         (spoken(r"new paragraph"), "\n\n"),
         (spoken(r"(?:new line|next line)"), "\n"),
@@ -2769,6 +2804,22 @@ mod tests {
         assert_eq!(
             apply_voice_commands("One. New paragraph. Two."),
             "One.\n\nTwo."
+        );
+        assert_eq!(
+            apply_voice_commands("This is all caps urgent"),
+            "This is URGENT"
+        );
+        assert_eq!(
+            apply_voice_commands("Deploy to hashtag production"),
+            "Deploy to #production"
+        );
+        assert_eq!(
+            apply_voice_commands("He said quote ship it unquote immediately"),
+            "He said \"ship it\" immediately"
+        );
+        assert_eq!(
+            apply_voice_commands("Click here in parentheses check docs close parenthesis"),
+            "Click here (check docs)"
         );
     }
 

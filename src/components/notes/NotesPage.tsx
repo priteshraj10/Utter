@@ -7,11 +7,16 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import {
   CalendarDays,
   CheckSquare,
+  ChevronDown,
   Copy,
+  FileDown,
   FileText,
+  ListTodo,
   Loader2,
   MessageCircleQuestion,
   Mic,
@@ -24,6 +29,7 @@ import {
   Square,
   Tag,
   Trash2,
+  UploadCloud,
   Users,
   Wand2,
   X,
@@ -342,6 +348,80 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     }
   };
 
+  const [importingAudio, setImportingAudio] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  const importAudioFile = async () => {
+    try {
+      const picked = await open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: t("notes.audioFiles"),
+            extensions: [
+              "mp3",
+              "m4a",
+              "aac",
+              "wav",
+              "flac",
+              "aif",
+              "mp4",
+              "mov",
+            ],
+          },
+        ],
+      });
+      if (!picked || typeof picked !== "string") return;
+
+      setImportingAudio(true);
+      const fileName =
+        picked
+          .split(/[\\/]/)
+          .pop()
+          ?.replace(/\.[^.]+$/, "") || "Imported Meeting";
+      const toastId = toast.loading(t("notes.importingAudio"));
+
+      const res = await commands.transcribeFile(picked);
+      toast.dismiss(toastId);
+
+      if (res.status === "error") {
+        toast.error(res.error);
+        return;
+      }
+
+      const transcriptText =
+        res.data.post_processed_text || res.data.transcription_text;
+      const noteRes = await commands.createNote(fileName, transcriptText);
+
+      if (noteRes.status === "error") {
+        toast.error(noteRes.error);
+        return;
+      }
+
+      await commands.setNoteTags(noteRes.data.id, ["imported", "meeting"]);
+      await load();
+      setSelectedId(noteRes.data.id);
+      setDraft({ title: fileName, body: transcriptText });
+      toast.success(t("notes.importSuccess"));
+
+      // Auto-summarize the imported meeting note
+      setTimeout(async () => {
+        setSummarizing(true);
+        const sumRes = await commands.summarizeNote(noteRes.data.id, "meeting");
+        setSummarizing(false);
+        if (sumRes.status === "ok") {
+          await load();
+        }
+      }, 200);
+    } catch (err) {
+      console.error("Failed to import audio:", err);
+      toast.error(String(err));
+    } finally {
+      setImportingAudio(false);
+    }
+  };
+
   const copyNote = async () => {
     if (!draft || !selected) return;
     const markdown = noteToMarkdown(selected, draft, {
@@ -350,6 +430,53 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
       transcript: t("notes.markdown.transcript"),
     });
     if (await copyToClipboard(markdown)) toast.success(t("notes.copied"));
+  };
+
+  const copySummaryOnly = async () => {
+    if (!selected?.summary) return;
+    if (await copyToClipboard(selected.summary)) {
+      toast.success(t("notes.summaryCopied"));
+      setExportMenuOpen(false);
+    }
+  };
+
+  const copyActionItemsOnly = async () => {
+    if (!selected) return;
+    const items = parseActionItems(selected);
+    if (items.length === 0) {
+      toast.info(t("notes.actions.empty"));
+      return;
+    }
+    const text = items
+      .map((i) => `- [${i.done ? "x" : " "}] ${i.text}`)
+      .join("\n");
+    if (await copyToClipboard(text)) {
+      toast.success(t("notes.actionsCopied"));
+      setExportMenuOpen(false);
+    }
+  };
+
+  const exportMarkdownFile = async () => {
+    if (!draft || !selected) return;
+    try {
+      const defaultName = `${(draft.title || t("notes.untitled")).replace(/[/\\?%*:|"<>]/g, "-")}.md`;
+      const path = await save({
+        defaultPath: defaultName,
+        filters: [{ name: "Markdown", extensions: ["md"] }],
+      });
+      if (!path) return;
+      const markdown = noteToMarkdown(selected, draft, {
+        untitled: t("notes.untitled"),
+        summary: t("notes.markdown.summary"),
+        transcript: t("notes.markdown.transcript"),
+      });
+      await writeTextFile(path, markdown);
+      toast.success(t("notes.noteExported"));
+      setExportMenuOpen(false);
+    } catch (err) {
+      console.error("Failed to export markdown file:", err);
+      toast.error(String(err));
+    }
   };
 
   const summaryItems = selected ? parseActionItems(selected) : [];
@@ -479,6 +606,23 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
               >
                 <Plus size={14} />
               </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-xl px-2.5 shadow-2xs"
+                onClick={importAudioFile}
+                disabled={importingAudio}
+                title={t("notes.importAudio")}
+              >
+                {importingAudio ? (
+                  <Loader2
+                    size={14}
+                    className="animate-spin text-logo-primary"
+                  />
+                ) : (
+                  <UploadCloud size={14} />
+                )}
+              </Button>
             </div>
             <div className="flex flex-wrap gap-1">
               {FILTERS.map((f) => (
@@ -593,14 +737,59 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   >
                     {selected.pinned ? <PinOff size={14} /> : <Pin size={14} />}
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={copyNote}
-                    title={t("notes.copyMarkdown")}
-                  >
-                    <Copy size={14} />
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                      className="flex items-center gap-1"
+                      title={t("notes.export")}
+                    >
+                      <Copy size={14} />
+                      <ChevronDown size={11} className="text-ink-3" />
+                    </Button>
+                    {exportMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 w-52 rounded-xl border border-line bg-surface/95 backdrop-blur-xl shadow-lg p-1.5 z-50 space-y-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void copyNote();
+                            setExportMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 transition-colors text-left cursor-pointer"
+                        >
+                          <FileText size={13} className="text-logo-primary" />
+                          <span>{t("notes.copyFullMarkdown")}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void copySummaryOnly()}
+                          disabled={!selected.summary}
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 disabled:opacity-40 transition-colors text-left cursor-pointer"
+                        >
+                          <Sparkles size={13} className="text-purple-400" />
+                          <span>{t("notes.copySummaryOnly")}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void copyActionItemsOnly()}
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 transition-colors text-left cursor-pointer"
+                        >
+                          <ListTodo size={13} className="text-emerald-400" />
+                          <span>{t("notes.copyActionItemsOnly")}</span>
+                        </button>
+                        <div className="border-t border-line/50 my-1" />
+                        <button
+                          type="button"
+                          onClick={() => void exportMarkdownFile()}
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 transition-colors text-left cursor-pointer"
+                        >
+                          <FileDown size={13} className="text-cyan-400" />
+                          <span>{t("notes.exportMarkdownFile")}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <Button
                     variant="warning"
                     size="sm"

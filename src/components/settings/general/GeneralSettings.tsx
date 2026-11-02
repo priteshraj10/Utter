@@ -106,7 +106,7 @@ const FlowHomeHub: React.FC = () => {
   const [screenCtx, setScreenCtx] = useState<ScreenContext | null>(null);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [scratchOpen, setScratchOpen] = useState(false);
+  const [scratchOpen, setScratchOpen] = useState(true);
   const [scratchText, setScratchText] = useState("");
   const [customCmd, setCustomCmd] = useState("");
   const [transforming, setTransforming] = useState(false);
@@ -520,6 +520,19 @@ const FlowHomeHub: React.FC = () => {
             >
               <Wand2 size={13} className="mr-1" />
               {transforming ? t("flow.transforming") : t("flow.runCommand")}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!scratchText.trim()}
+              onClick={async () => {
+                if (await copyToClipboard(scratchText)) {
+                  toast.success(t("notes.copied"));
+                }
+              }}
+              title={t("notes.copy")}
+            >
+              <Copy size={13} />
             </Button>
             <Button
               variant="secondary"
