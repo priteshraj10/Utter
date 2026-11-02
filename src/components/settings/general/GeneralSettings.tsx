@@ -696,7 +696,7 @@ const FlowHomeHub: React.FC = () => {
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-sm text-text leading-relaxed whitespace-pre-wrap break-words select-text">
+                              <p className="text-sm text-text leading-relaxed whitespace-pre-wrap wrap-break-word select-text">
                                 {displayed ||
                                   t("settings.history.notTranscribed")}
                               </p>
