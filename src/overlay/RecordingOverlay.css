@@ -3,7 +3,7 @@
 :root {
   --s-font:
     -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-  /* Sleek Wispr Flow dark carbon capsule in both light and dark modes */
+  /* Sleek Utter dark carbon capsule in both light and dark modes */
   --s-surface: #181817;
   --s-text: #f5f4f0;
   --s-accent: #c4b5fd;
@@ -89,7 +89,7 @@
   margin: 0;
 }
 
-/* Shared base card: Frosted acrylic translucent glass with ambient glow (Wispr Flow style). */
+/* Shared base card: Frosted acrylic translucent glass with ambient glow. */
 .scard {
   width: var(--ov-pill-w);
   /* Never wider than the window: an unaccounted content zoom degrades to a

@@ -1099,11 +1099,13 @@ fn tokenize_filename_parts(name: &str) -> Vec<String> {
         let mut current = String::new();
         let chars: Vec<char> = chunk.chars().collect();
         for (i, &c) in chars.iter().enumerate() {
-            if i > 0 && c.is_ascii_uppercase() && chars[i - 1].is_ascii_lowercase() {
-                if !current.is_empty() {
-                    parts.push(current.to_lowercase());
-                    current.clear();
-                }
+            if i > 0
+                && c.is_ascii_uppercase()
+                && chars[i - 1].is_ascii_lowercase()
+                && !current.is_empty()
+            {
+                parts.push(current.to_lowercase());
+                current.clear();
             }
             current.push(c);
         }
@@ -1684,7 +1686,7 @@ pub fn capture_selection(app: &AppHandle) -> Option<String> {
     // An empty clipboard tells "nothing selected" apart from a stale copy.
     let _ = clipboard.write_text("");
 
-    if let Err(e) = crate::clipboard::with_enigo(app, |enigo| crate::input::send_copy(enigo)) {
+    if let Err(e) = crate::clipboard::with_enigo(app, crate::input::send_copy) {
         debug!("Could not send the copy shortcut: {e}");
     }
 
@@ -2028,7 +2030,7 @@ static SPOKEN_EMOJIS: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new(|| {
     ]
 });
 
-/// Applies explicit spoken commands and Wispr Flow's spoken backtracking:
+/// Applies explicit spoken commands and voice backtracking:
 /// - Whole-sentence backtrack: `"scratch that"`, `"delete that"`, `"strike that"`,
 ///   `"forget that"`, `"cancel that"`, `"never mind"` removes the preceding sentence.
 /// - Mid-sentence self-correction: `"<word>, no wait <replacement>"`,
@@ -2806,7 +2808,7 @@ pub fn local_ask_notes(
         }
     }
 
-    matching_sentences.sort_by(|a, b| b.0.cmp(&a.0));
+    matching_sentences.sort_by_key(|item| std::cmp::Reverse(item.0));
     let mut out = String::new();
     out.push_str("Based on your notes:\n\n");
     for (_, note_id, sentence) in matching_sentences.iter().take(5) {

@@ -119,13 +119,24 @@ const FlowHomeHub: React.FC = () => {
   const [memory, setMemory] = useState<DictationMemoryItem[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     let unlistenFn: (() => void) | null = null;
     listen<number[]>("mic-level", (event) => {
-      setMicLevels(event.payload.slice(0, 7));
-    }).then((un) => {
-      unlistenFn = un;
-    });
+      if (!cancelled) {
+        setMicLevels(event.payload.slice(0, 7));
+      }
+    })
+      .then((un) => {
+        if (cancelled) {
+          un();
+        } else {
+          unlistenFn = un;
+        }
+      })
+      .catch(() => {});
+
     return () => {
+      cancelled = true;
       if (unlistenFn) unlistenFn();
     };
   }, []);
@@ -160,16 +171,36 @@ const FlowHomeHub: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     loadData();
-    const unlistenComplete = events.transcriptionCompleteEvent.listen(() => {
-      loadData();
-    });
-    const unlistenHistory = events.historyUpdatePayload.listen(() => {
-      loadData();
-    });
+
+    let unlistenCompleteFn: (() => void) | null = null;
+    let unlistenHistoryFn: (() => void) | null = null;
+
+    events.transcriptionCompleteEvent
+      .listen(() => {
+        if (!cancelled) void loadData();
+      })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenCompleteFn = fn;
+      })
+      .catch(() => {});
+
+    events.historyUpdatePayload
+      .listen(() => {
+        if (!cancelled) void loadData();
+      })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenHistoryFn = fn;
+      })
+      .catch(() => {});
+
     return () => {
-      unlistenComplete.then((fn) => fn());
-      unlistenHistory.then((fn) => fn());
+      cancelled = true;
+      if (unlistenCompleteFn) unlistenCompleteFn();
+      if (unlistenHistoryFn) unlistenHistoryFn();
     };
   }, [loadData]);
 
@@ -333,9 +364,9 @@ const FlowHomeHub: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() =>
-                updateSetting("context_awareness", !contextAwareness)
-              }
+              onClick={() => {
+                void updateSetting("context_awareness", !contextAwareness);
+              }}
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                 contextAwareness
                   ? "bg-text text-background border-text"
@@ -348,7 +379,9 @@ const FlowHomeHub: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => updateSetting("whisper_mode", !whisperMode)}
+              onClick={() => {
+                void updateSetting("whisper_mode", !whisperMode);
+              }}
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                 whisperMode
                   ? "bg-text text-background border-text"
@@ -363,9 +396,11 @@ const FlowHomeHub: React.FC = () => {
                 className="w-38"
                 value={selectedPromptId}
                 options={promptOptions}
-                onChange={(val) =>
-                  val && updateSetting("post_process_selected_prompt_id", val)
-                }
+                onChange={(val) => {
+                  if (val) {
+                    void updateSetting("post_process_selected_prompt_id", val);
+                  }
+                }}
               />
             )}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-line shadow-2xs">
@@ -373,7 +408,7 @@ const FlowHomeHub: React.FC = () => {
               <div className="flex items-center gap-0.5 h-3">
                 {micLevels.map((lvl, idx) => (
                   <span
-                    key={idx}
+                    key={`mic-level-${idx}`}
                     className="w-1 rounded-full bg-logo-primary transition-all duration-75"
                     style={{
                       height: `${Math.max(3, Math.min(14, lvl * 14))}px`,
@@ -432,23 +467,27 @@ const FlowHomeHub: React.FC = () => {
                   {screenCtx.window_title}
                 </span>
               )}
-              {screenCtx.ide_files.slice(0, 3).map((file) => (
-                <span
-                  key={file}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-logo-primary/10 text-logo-primary font-mono text-[11px]"
-                >
-                  <Code2 size={11} />
-                  {file}
-                </span>
-              ))}
-              {screenCtx.proper_nouns.slice(0, 4).map((noun) => (
-                <span
-                  key={noun}
-                  className="px-1.5 py-0.5 rounded bg-sidebar text-ink-2 text-[11px]"
-                >
-                  {noun}
-                </span>
-              ))}
+              {Array.from(new Set(screenCtx.ide_files ?? []))
+                .slice(0, 3)
+                .map((file, idx) => (
+                  <span
+                    key={`file-${file}-${idx}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-logo-primary/10 text-logo-primary font-mono text-[11px]"
+                  >
+                    <Code2 size={11} />
+                    {file}
+                  </span>
+                ))}
+              {Array.from(new Set(screenCtx.proper_nouns ?? []))
+                .slice(0, 4)
+                .map((noun, idx) => (
+                  <span
+                    key={`noun-${noun}-${idx}`}
+                    className="px-1.5 py-0.5 rounded bg-sidebar text-ink-2 text-[11px]"
+                  >
+                    {noun}
+                  </span>
+                ))}
               {memory.length > 0 && (
                 <button
                   type="button"
@@ -716,9 +755,11 @@ const FlowHomeHub: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() =>
-                              commands.retryHistoryEntryTranscription(entry.id)
-                            }
+                            onClick={() => {
+                              void commands.retryHistoryEntryTranscription(
+                                entry.id,
+                              );
+                            }}
                             className="p-1.5 rounded-md text-ink-3 hover:text-text hover:bg-sidebar cursor-pointer"
                             title={t("settings.history.retranscribe")}
                           >
@@ -728,7 +769,7 @@ const FlowHomeHub: React.FC = () => {
                             type="button"
                             onClick={async () => {
                               await commands.deleteHistoryEntry(entry.id);
-                              loadData();
+                              await loadData();
                             }}
                             className="p-1.5 rounded-md text-ink-3 hover:text-error hover:bg-sidebar cursor-pointer"
                             title={t("settings.history.delete")}

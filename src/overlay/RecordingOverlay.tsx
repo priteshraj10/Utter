@@ -294,7 +294,7 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
-  // Wispr Flow style: Overlay is always the sleek compact capsule pill.
+  // Utter capsule style: Sleek compact pill during recording with active mode pill.
   // While speaking, it animates the waveform without displaying a bulky text box.
   // When finalizing or processing, it smoothly shows the spinner and status.
   const working =
