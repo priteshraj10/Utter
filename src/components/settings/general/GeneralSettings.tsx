@@ -472,7 +472,7 @@ const FlowHomeHub: React.FC = () => {
                 .map((file, idx) => (
                   <span
                     key={`file-${file}-${idx}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-logo-primary/10 text-logo-primary font-mono text-[11px]"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-logo-primary/10 text-logo-primary font-mono text-tag"
                   >
                     <Code2 size={11} />
                     {file}
@@ -483,7 +483,7 @@ const FlowHomeHub: React.FC = () => {
                 .map((noun, idx) => (
                   <span
                     key={`noun-${noun}-${idx}`}
-                    className="px-1.5 py-0.5 rounded bg-sidebar text-ink-2 text-[11px]"
+                    className="px-1.5 py-0.5 rounded bg-sidebar text-ink-2 text-tag"
                   >
                     {noun}
                   </span>
@@ -496,7 +496,7 @@ const FlowHomeHub: React.FC = () => {
                     setMemory([]);
                     toast.success(t("flow.contextMemoryCleared"));
                   }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 font-medium text-[11px] hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 font-medium text-tag hover:bg-emerald-500/20 transition-colors cursor-pointer"
                   title={t("flow.clearContextMemory")}
                 >
                   <Sparkles size={11} />
@@ -672,7 +672,7 @@ const FlowHomeHub: React.FC = () => {
                                   className="w-full min-h-[64px] rounded-lg border border-line bg-background p-2.5 text-sm outline-none focus:border-logo-primary"
                                 />
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="text-[11px] text-ink-3">
+                                  <span className="text-tag text-ink-3">
                                     {t("settings.history.learnWordsHint")}
                                   </span>
                                   <div className="flex items-center gap-1.5">
