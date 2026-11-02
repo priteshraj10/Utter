@@ -1,11 +1,11 @@
 [package]
-name = "handy"
+name = "utter"
 version = "0.9.8"
-description = "Handy"
-authors = ["cjpais"]
+description = "Utter"
+authors = ["Utter"]
 edition = "2021"
 license = "MIT"
-default-run = "handy"
+default-run = "utter"
 
 [profile.dev]
 incremental = true
@@ -17,7 +17,7 @@ debug = 0
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "handy_app_lib"
+name = "utter_app_lib"
 crate-type = ["rlib"]
 
 [build-dependencies]

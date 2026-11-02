@@ -8,6 +8,9 @@
 @theme inline {
   --color-text: var(--color-text);
   --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-1: var(--color-surface-1);
+  --color-sidebar: var(--color-sidebar);
   --color-background-ui: var(--color-background-ui);
   --color-logo-primary: var(--color-logo-primary);
   --color-warning: var(--color-warning);
@@ -21,6 +24,7 @@
   --color-moss-wash: var(--color-moss-wash);
   --color-warning-wash: var(--color-warning-wash);
   --color-error-wash: var(--color-error-wash);
+  --color-ink-1: var(--color-ink-1);
   --color-ink-2: var(--color-ink-2);
   --color-ink-3: var(--color-ink-3);
   --color-line: var(--color-line);
@@ -39,12 +43,15 @@
 /* Onboarding's scale in px (rem steps land on fractions at a 15px root).
    Names avoid Tailwind's defaults, which Settings still uses. */
 @theme {
+  --font-serif:
+    "EB Garamond", "Iowan Old Style", "New York", "Apple Garamond",
+    "Baskerville", Georgia, serif;
   --font-display:
-    ui-rounded, "SF Pro Rounded", system-ui, -apple-system,
+    -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display",
     "Segoe UI Variable Display", "Segoe UI", sans-serif;
   --font-ui:
-    system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
-    "Noto Sans", sans-serif;
+    -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text",
+    "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", sans-serif;
   --font-cjk-subset:
     "Handy CJK Subset", -apple-system, "Segoe UI Variable Text", "Segoe UI",
     system-ui, sans-serif;

@@ -1,36 +1,29 @@
 @import "../styles/theme.css";
 
 :root {
-  --s-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  /* Near-opaque app surface (theme.css --color-background at 98%). Auto-flips
-     light/dark with --color-background, so no dark-mode override is needed. */
-  --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
-  /* Accent = logo pink; flips automatically via --color-logo-primary. */
-  --s-accent: var(--color-logo-primary);
-  /* The rest come from theme.css, which already follows the theme setting. */
-  --s-accent-soft: color-mix(
-    in srgb,
-    var(--color-logo-primary) 20%,
-    transparent
-  );
-  --s-muted: var(--color-ink-2);
-  --s-faint: var(--color-ink-3);
-  --s-border: var(--color-line);
-  --s-hair: var(--color-wash);
+  --s-font:
+    -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  /* Sleek Wispr Flow dark carbon capsule in both light and dark modes */
+  --s-surface: #181817;
+  --s-text: #f5f4f0;
+  --s-accent: #c4b5fd;
+  --s-accent-soft: rgba(196, 181, 253, 0.22);
+  --s-muted: #a8a7a2;
+  --s-faint: #787773;
+  --s-border: rgba(255, 255, 255, 0.13);
+  --s-hair: rgba(255, 255, 255, 0.08);
 
   /* Card geometry — single source of truth for the visible overlay sizes. The
      native overlay window (overlay.rs) is sized from these: it must be at least
      the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
      since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
      in sync when these change. */
-  --ov-rest-w: 172px; /* resting compact pill (minimal, recording) -- roomy enough
-                         for the English working label before the grow starts */
-  --ov-pill-w: 184px; /* base width / Live pill before it opens or collapses */
-  --ov-work-w: 216px; /* working pill (transcribing / polishing) -- wide enough to
-                         center longer labels; shared by Live (collapsed) + minimal */
-  --ov-open-w: 392px; /* Live panel, expanded */
-  --ov-base-h: 40px; /* control-row height (.sbase) */
-  --ov-cap-max-h: 64px; /* max height of the scrolling live-text region */
+  --ov-rest-w: 172px;
+  --ov-pill-w: 184px;
+  --ov-work-w: 216px;
+  --ov-open-w: 392px;
+  --ov-base-h: 40px;
+  --ov-cap-max-h: 64px;
 }
 /* ============================================================
    Unified overlay stage — one fixed, transparent container shared by the compact
@@ -96,7 +89,7 @@
   margin: 0;
 }
 
-/* Shared base card. Flat: theme surface + hairline border, no shadow or blur. */
+/* Shared base card: Frosted acrylic translucent glass with ambient glow (Wispr Flow style). */
 .scard {
   width: var(--ov-pill-w);
   /* Never wider than the window: an unaccounted content zoom degrades to a
@@ -108,9 +101,14 @@
   flex-direction: column;
   flex: none; /* hold our own width; never let the stage flex shrink the card */
   transform-origin: bottom center;
-  background: var(--s-surface);
-  border: 1px solid var(--s-border);
-  /* Flat: no drop shadow, no backdrop blur/saturate (was a glassy gradient look). */
+  background: rgba(18, 18, 20, 0.88);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 16px 36px -8px rgba(0, 0, 0, 0.65),
+    0 4px 12px rgba(0, 0, 0, 0.3);
   /* pop-in plays on mount; morph (width/radius) is a transition */
   animation: scard-pop 460ms cubic-bezier(0.22, 1, 0.36, 1);
   transition:
@@ -187,11 +185,11 @@
   padding-bottom: 0px;
   padding-left: 14px;
   padding-right: 14px;
-  font-size: 15px;
-  font-style: italic;
-  line-height: 1.35;
-  letter-spacing: -0.003em;
-  color: var(--color-text);
+  font-size: 14.5px;
+  font-style: normal;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  color: var(--s-text);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   scrollbar-width: none; /* Firefox */
@@ -264,9 +262,10 @@
     opacity 180ms ease;
 }
 .sdot.ready {
-  background: var(--s-accent);
+  background: #38bdf8;
   opacity: 1;
-  animation: sdot-pulse 1.9s infinite;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+  animation: sdot-pulse 1.8s infinite;
 }
 /* A quiet neutral dot while the host has not delivered its first sample yet. */
 .sdot.arming {
@@ -276,22 +275,21 @@
 }
 @keyframes sdot-pulse {
   0% {
-    box-shadow: 0 0 0 0 var(--s-accent-soft);
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6);
   }
   70% {
-    box-shadow: 0 0 0 7px transparent;
+    box-shadow: 0 0 0 8px transparent;
   }
 }
 .stimer {
-  font-size: 12px;
-  color: var(--s-faint);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #c4b5fd;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
   white-space: nowrap;
-  opacity: 0;
-  transition: opacity 240ms ease 80ms;
-}
-.scard.open .stimer {
-  opacity: 1;
+  opacity: 0.95;
+  transition: opacity 240ms ease;
 }
 
 /* Waveform — reactive only after the first microphone callback. While arming,
@@ -306,14 +304,14 @@
   flex: none;
 }
 .swave i {
-  width: 4px;
+  width: 3.5px;
   min-height: 3px;
   max-height: 18px;
   border-radius: 2px;
-  background: var(--s-accent);
+  background: linear-gradient(180deg, #c4b5fd 0%, #38bdf8 100%);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
   transition:
     height 80ms linear,
-    background-color 180ms ease,
     opacity 180ms ease;
 }
 .swave.arming i {
@@ -375,7 +373,7 @@
 }
 .sx:hover {
   background: var(--s-accent-soft);
-  color: var(--color-text);
+  color: var(--s-text);
   transform: scale(1.05);
 }
 .sx:active {

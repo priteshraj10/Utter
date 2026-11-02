@@ -586,10 +586,22 @@ pub struct AppSettings {
     /// Whisper Mode: soft-knee dynamic gain boost for quiet or whispered speech.
     #[serde(default)]
     pub whisper_mode: bool,
+    /// Act on spoken commands while dictating: "new line", "new paragraph",
+    /// "bullet point" and "scratch that".
+    #[serde(default = "default_true")]
+    pub voice_commands: bool,
+    /// Screen-Aware Dictation & Vibe Coding: inspect the active window, cursor
+    /// text, proper nouns, and IDE filenames via Accessibility APIs.
+    #[serde(default = "default_true")]
+    pub context_awareness: bool,
     #[serde(default)]
     pub snippets: Vec<Snippet>,
     #[serde(default)]
     pub app_styles: Vec<AppStyle>,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_model() -> String {
@@ -645,12 +657,11 @@ fn default_overlay_position() -> OverlayPosition {
 }
 
 fn default_overlay_style() -> OverlayStyle {
-    // Linux hides the overlay by default; other platforms show the live overlay.
-    // Position is independent and only selects top vs. bottom placement.
+    // Linux hides the overlay by default; other platforms show the compact waveform pill (Wispr Flow style).
     #[cfg(target_os = "linux")]
     return OverlayStyle::None;
     #[cfg(not(target_os = "linux"))]
-    return OverlayStyle::Live;
+    return OverlayStyle::Minimal;
 }
 
 fn default_vad_enabled() -> bool {
@@ -922,6 +933,16 @@ fn default_style_prompts() -> Vec<LLMPrompt> {
             name: "Code & Technical".to_string(),
             prompt: style_prompt("Format for a code editor, terminal, or technical prompt: preserve technical terms, camelCase, snake_case, CLI flags, and wrap inline identifiers or commands in backticks when appropriate."),
         },
+        LLMPrompt {
+            id: "style_excited".to_string(),
+            name: "Excited".to_string(),
+            prompt: style_prompt("Use an enthusiastic, warm, and energetic tone. Use exclamation marks naturally where appropriate while keeping the exact meaning."),
+        },
+        LLMPrompt {
+            id: "style_prompt_engineer".to_string(),
+            name: "Prompt Engineer".to_string(),
+            prompt: "<transcript>\n${output}\n</transcript>\n\nThe user spoke a raw request or brain-dump meant as a prompt for an AI coding assistant or LLM. Rewrite it into a clear, well-structured, high-signal prompt with:\n- A concise objective sentence at the top\n- Bullet points for key requirements, constraints, or files/symbols mentioned\n- Clear expected output format if relevant\n\nKeep all technical identifiers, filenames, and constraints intact. Do not answer the prompt yourself; return only the structured prompt.".to_string(),
+        },
     ]
 }
 
@@ -1017,6 +1038,17 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                     .insert(provider.id.clone(), default_model);
                 changed = true;
             }
+        }
+    }
+
+    for default_prompt in default_post_process_prompts() {
+        if !settings
+            .post_process_prompts
+            .iter()
+            .any(|p| p.id == default_prompt.id)
+        {
+            settings.post_process_prompts.push(default_prompt);
+            changed = true;
         }
     }
 
@@ -1170,6 +1202,8 @@ pub fn get_default_settings() -> AppSettings {
         overlay_style: default_overlay_style(),
         auto_cleanup: default_post_process_enabled(),
         whisper_mode: false,
+        voice_commands: true,
+        context_awareness: true,
         snippets: Vec::new(),
         app_styles: Vec::new(),
     }
@@ -1445,7 +1479,7 @@ fn apply_settings_migrations(
         settings.overlay_style = if was_hidden {
             OverlayStyle::None
         } else {
-            OverlayStyle::Live
+            OverlayStyle::Minimal
         };
         updated = true;
     }
@@ -1821,9 +1855,9 @@ mod tests {
 
     #[cfg(not(target_os = "linux"))]
     #[test]
-    fn default_overlay_style_is_live_when_overlay_defaults_on() {
+    fn default_overlay_style_is_minimal_when_overlay_defaults_on() {
         let settings = get_default_settings();
-        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert_eq!(settings.overlay_style, OverlayStyle::Minimal);
     }
 
     #[test]
@@ -1852,10 +1886,10 @@ mod tests {
     }
 
     #[test]
-    fn overlay_migration_promotes_enabled_overlay_to_live() {
+    fn overlay_migration_promotes_enabled_overlay_to_minimal() {
         let mut settings = get_default_settings();
         settings.overlay_position = OverlayPosition::Top;
-        settings.overlay_style = OverlayStyle::Minimal;
+        settings.overlay_style = OverlayStyle::None;
 
         let raw = serde_json::json!({
             "selected_model": "",
@@ -1863,7 +1897,7 @@ mod tests {
         });
 
         assert!(apply_settings_migrations(&mut settings, &raw));
-        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert_eq!(settings.overlay_style, OverlayStyle::Minimal);
         assert_eq!(settings.overlay_position, OverlayPosition::Top);
     }
 

@@ -511,11 +511,12 @@ fn build_apple_intelligence_bridge() {
             panic!("swiftc failed to compile {source_file}");
         }
 
-        let libtool_bin = if Path::new("/Library/Developer/CommandLineTools/usr/bin/libtool").exists() {
-            "/Library/Developer/CommandLineTools/usr/bin/libtool"
-        } else {
-            "libtool"
-        };
+        let libtool_bin =
+            if Path::new("/Library/Developer/CommandLineTools/usr/bin/libtool").exists() {
+                "/Library/Developer/CommandLineTools/usr/bin/libtool"
+            } else {
+                "libtool"
+            };
         let status = Command::new(libtool_bin)
             .args([
                 "-static",

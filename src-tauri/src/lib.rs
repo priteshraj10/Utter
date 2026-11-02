@@ -748,6 +748,12 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::update_note,
             commands::utter::delete_note,
             commands::utter::summarize_note,
+            commands::utter::update_note_summary,
+            commands::utter::set_note_pinned,
+            commands::utter::set_note_tags,
+            commands::utter::ask_notes,
+            commands::utter::create_daily_digest,
+            commands::utter::change_voice_commands_setting,
             commands::utter::toggle_voice_note,
             commands::utter::set_snippets,
             commands::utter::set_app_styles,
@@ -756,6 +762,8 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::transform_text,
             commands::utter::learn_words_from_edit,
             commands::utter::get_frontmost_app,
+            commands::utter::get_screen_context,
+            commands::utter::change_context_awareness_setting,
             commands::initialize_enigo,
             commands::initialize_shortcuts,
             commands::complete_onboarding,
@@ -861,11 +869,11 @@ pub fn run(cli_args: CliArgs) {
                     Target::new(if let Some(data_dir) = portable::data_dir() {
                         TargetKind::Folder {
                             path: data_dir.join("logs"),
-                            file_name: Some("handy".into()),
+                            file_name: Some("utter".into()),
                         }
                     } else {
                         TargetKind::LogDir {
-                            file_name: Some("handy".into()),
+                            file_name: Some("utter".into()),
                         }
                     })
                     .filter(|metadata| {

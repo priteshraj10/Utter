@@ -1,32 +1,29 @@
-// Utter's mark: a speech bubble holding a short voice waveform.
+// Utter's mark: a sleek, modern waveform emblem in a rounded squircle.
 const UtterMark = ({
   width,
   height,
+  className,
 }: {
   width?: number | string;
   height?: number | string;
-  // The sidebar passes a className for its icons; the mark ignores it.
   className?: string;
 }) => (
   <svg
     width={width || 24}
     height={height || 24}
-    viewBox="0 0 64 64"
+    viewBox="0 0 36 36"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
+    className={className}
   >
-    <path
-      d="M12 8h40a8 8 0 0 1 8 8v24a8 8 0 0 1-8 8H30l-12 10v-10h-6a8 8 0 0 1-8-8V16a8 8 0 0 1 8-8Z"
-      className="stroke-text"
-      strokeWidth="4"
-      strokeLinejoin="round"
-    />
-    <g className="stroke-logo-primary" strokeWidth="5" strokeLinecap="round">
-      <path d="M20 24v8" />
-      <path d="M28 18v20" />
-      <path d="M36 22v12" />
-      <path d="M44 26v4" />
+    <rect x="2" y="2" width="32" height="32" rx="9" className="fill-text" />
+    <g stroke="var(--color-background)" strokeWidth="2.6" strokeLinecap="round">
+      <path d="M10.5 15.5v5" />
+      <path d="M15.5 11v14" />
+      <path d="M20.5 13v10" />
+      <path d="M25.5 16v4" />
     </g>
+    <circle cx="27" cy="9.5" r="2.2" className="fill-logo-primary" />
   </svg>
 );
 

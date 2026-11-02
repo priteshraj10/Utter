@@ -483,6 +483,22 @@ impl HistoryManager {
         Ok(entries)
     }
 
+    /// Completed entries at or after `since` (Unix seconds), oldest first.
+    pub fn entries_since(&self, since: i64) -> Result<Vec<HistoryEntry>> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {ENTRY_COLUMNS}
+             FROM transcription_history
+             WHERE timestamp >= ?1 AND transcription_text != ''
+             ORDER BY timestamp ASC
+             LIMIT 2000"
+        ))?;
+        let entries = stmt
+            .query_map(params![since], Self::map_history_entry)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(entries)
+    }
+
     pub fn recordings_dir(&self) -> &std::path::Path {
         &self.recordings_dir
     }

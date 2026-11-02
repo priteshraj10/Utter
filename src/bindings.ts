@@ -695,9 +695,69 @@ async deleteNote(id: number) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async summarizeNote(id: number) : Promise<Result<string, string>> {
+async summarizeNote(id: number, template: string | null) : Promise<Result<string, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("summarize_note", { id }) };
+    return { status: "ok", data: await TAURI_INVOKE("summarize_note", { id, template }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Replaces (or clears) a note's summary, e.g. after ticking an action item.
+ */
+async updateNoteSummary(id: number, summary: string | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_note_summary", { id, summary }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setNotePinned(id: number, pinned: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_note_pinned", { id, pinned }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Stores a note's tags and returns them normalized.
+ */
+async setNoteTags(id: number, tags: string[]) : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_note_tags", { id, tags }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Answers a question from the user's notes, citing the notes used.
+ */
+async askNotes(question: string) : Promise<Result<NotesAnswer, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("ask_notes", { question }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Builds an AI digest of today's dictations and notes as a new note.
+ */
+async createDailyDigest() : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_daily_digest") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeVoiceCommandsSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_voice_commands_setting", { enabled }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -762,6 +822,21 @@ async learnWordsFromEdit(original: string, edited: string) : Promise<Result<stri
  */
 async getFrontmostApp() : Promise<string | null> {
     return await TAURI_INVOKE("get_frontmost_app");
+},
+/**
+ * Full ScreenContext snapshot of the frontmost app, window title, cursor text,
+ * proper nouns, IDE filenames, and clickable UI buttons.
+ */
+async getScreenContext() : Promise<ScreenContext> {
+    return await TAURI_INVOKE("get_screen_context");
+},
+async changeContextAwarenessSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_context_awareness_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 },
 /**
  * Try to initialize Enigo (keyboard/mouse simulation).
@@ -1259,7 +1334,8 @@ overlay_style?: OverlayStyle;
  * Run AI cleanup on every dictation, not only the post-processing
  * shortcut. Needs post-processing to be enabled with a provider.
  */
-auto_cleanup?: boolean; whisper_mode?: boolean; snippets?: Snippet[]; app_styles?: AppStyle[] }
+auto_cleanup?: boolean; whisper_mode?: boolean; voice_commands?: boolean; context_awareness?: boolean; snippets?: Snippet[]; app_styles?: AppStyle[] }
+export type ScreenContext = { app_name: string; bundle_id: string | null; window_title: string | null; document_url: string | null; before_text: string | null; selected_text: string | null; after_text: string | null; proper_nouns: string[]; ide_files: string[]; clickable_elements: string[] }
 /**
  * Per-app writing style: while `app` is frontmost, AI cleanup uses the
  * prompt `prompt_id` instead of the selected one. `app` matches the app's
@@ -1425,7 +1501,25 @@ export type Note = { id: number; title: string; body: string; summary: string | 
 /**
  * Recording in the history recordings folder, for voice notes.
  */
-audio_file: string | null; audio_seconds: number; created_at: number; updated_at: number }
+audio_file: string | null; audio_seconds: number; created_at: number; updated_at: number; pinned: boolean; tags: string[]; 
+/**
+ * One of [`kind`]'s values.
+ */
+kind: string; 
+/**
+ * The template the current summary was written with.
+ */
+summary_template: string | null }
+export type NoteSource = { id: number; title: string }
+/**
+ * An answer from Ask-your-notes and the notes it drew on.
+ */
+export type NotesAnswer = { answer: string; 
+/**
+ * `(id, title)` of the notes cited, or of every note consulted when the
+ * answer cites none.
+ */
+sources: NoteSource[] }
 export type OverlayPosition = "top" | "bottom"
 /**
  * Which recording overlay to display. `Minimal` and `Live` share one base

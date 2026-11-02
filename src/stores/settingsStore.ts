@@ -212,6 +212,10 @@ const settingUpdaters: {
     commands.changeLanguageDetectionWindowSetting(value as number),
   auto_cleanup: (value) => commands.changeAutoCleanupSetting(value as boolean),
   whisper_mode: (value) => commands.changeWhisperModeSetting(value as boolean),
+  voice_commands: (value) =>
+    commands.changeVoiceCommandsSetting(value as boolean),
+  context_awareness: (value) =>
+    commands.changeContextAwarenessSetting(value as boolean),
   snippets: (value) => commands.setSnippets(value as Snippet[]),
   app_styles: (value) => commands.setAppStyles(value as AppStyle[]),
 };

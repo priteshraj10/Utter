@@ -31,7 +31,7 @@ pub fn init() {
             // empty/invalid marker alongside an existing Data/ dir, this is a
             // real portable install — upgrade the marker in place.
             eprintln!("[portable] upgrading legacy empty marker to magic string");
-            let _ = std::fs::write(&marker_path, "Handy Portable Mode");
+            let _ = std::fs::write(&marker_path, "Utter Portable Mode");
             true
         } else {
             false
@@ -119,7 +119,10 @@ pub fn store_path(relative: &str) -> PathBuf {
 /// Extracted for testability.
 fn is_valid_portable_marker(path: &std::path::Path) -> bool {
     std::fs::read_to_string(path)
-        .map(|s| s.trim().starts_with("Handy Portable Mode"))
+        .map(|s| {
+            let t = s.trim();
+            t.starts_with("Utter Portable Mode") || t.starts_with("Handy Portable Mode")
+        })
         .unwrap_or(false)
 }
 
@@ -130,11 +133,11 @@ mod tests {
 
     #[test]
     fn test_valid_magic_string_enables_portable() {
-        let dir = std::env::temp_dir().join("handy_test_valid");
+        let dir = std::env::temp_dir().join("utter_test_valid");
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         let mut f = std::fs::File::create(&marker).unwrap();
-        write!(f, "Handy Portable Mode").unwrap();
+        write!(f, "Utter Portable Mode").unwrap();
         assert!(is_valid_portable_marker(&marker));
         std::fs::remove_dir_all(dir).unwrap();
     }

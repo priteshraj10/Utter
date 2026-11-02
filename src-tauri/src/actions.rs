@@ -141,15 +141,27 @@ struct TranscribeAction {
 /// notes, since they are likely meetings rather than quick thoughts.
 const AUTO_SUMMARY_MIN_SECONDS: f64 = 60.0;
 
-/// Saves a voice note and, for long recordings, summarizes it in the
-/// background.
+/// Saves a voice note and summarizes it in the background as meeting/voice notes.
 fn save_voice_note(app: &AppHandle, text: &str, audio_file: Option<String>, audio_seconds: f64) {
+    use crate::managers::notes::kind;
     let notes = app.state::<Arc<crate::managers::notes::NotesManager>>();
+    let settings = get_settings(app);
+    let text = if settings.voice_commands {
+        crate::utter::apply_voice_commands(text)
+    } else {
+        text.to_string()
+    };
+    let note_kind = if audio_seconds >= AUTO_SUMMARY_MIN_SECONDS {
+        kind::MEETING
+    } else {
+        kind::VOICE
+    };
     let note = match notes.create(
-        &crate::utter::note_title(text),
-        text,
+        &crate::utter::note_title(&text),
+        &text,
         audio_file,
         audio_seconds,
+        note_kind,
     ) {
         Ok(note) => note,
         Err(e) => {
@@ -161,19 +173,27 @@ fn save_voice_note(app: &AppHandle, text: &str, audio_file: Option<String>, audi
             return;
         }
     };
-    let settings = get_settings(app);
-    if audio_seconds >= AUTO_SUMMARY_MIN_SECONDS && crate::utter::llm_available(&settings) {
+    // Automatically generate rich structured summaries for notes with content
+    let word_count = text.split_whitespace().count();
+    if word_count >= 5 {
         let app = app.clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(e) = summarize_note(&app, note.id).await {
+            if let Err(e) = summarize_note(&app, note.id, None).await {
                 warn!("Automatic note summary failed: {e}");
             }
         });
     }
 }
 
-/// Writes an AI summary for note `id` and stores it on the note.
-pub(crate) async fn summarize_note(app: &AppHandle, id: i64) -> Result<String, String> {
+/// Writes a summary for note `id` with `template` (see
+/// [`crate::utter::SUMMARY_TEMPLATES`]; `None` picks the note's default) and
+/// stores it. Uses configured cloud LLM, Apple Intelligence on macOS, or
+/// built-in on-device local intelligence engine.
+pub(crate) async fn summarize_note(
+    app: &AppHandle,
+    id: i64,
+    template: Option<String>,
+) -> Result<String, String> {
     let notes = Arc::clone(&app.state::<Arc<crate::managers::notes::NotesManager>>());
     let note = notes
         .get(id)
@@ -183,16 +203,254 @@ pub(crate) async fn summarize_note(app: &AppHandle, id: i64) -> Result<String, S
         return Err("This note is empty".into());
     }
     let settings = get_settings(app);
-    if !crate::utter::llm_available(&settings) {
-        return Err("Turn on AI post-processing and choose a provider to summarize notes".into());
+    let template = template
+        .filter(|t| crate::utter::SUMMARY_TEMPLATES.contains(&t.as_str()))
+        .unwrap_or_else(|| crate::utter::default_summary_template(&note.kind).to_string());
+    let prompt = crate::utter::summary_prompt(&template);
+
+    // 1. Try configured LLM provider
+    let mut summary = run_llm_prompt(&settings, &note.body, &prompt).await;
+
+    // 2. Try Apple Intelligence on macOS
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    if summary.is_none() && apple_intelligence::check_apple_intelligence_availability() {
+        let system_prompt = build_system_prompt(&prompt);
+        if let Ok(res) =
+            apple_intelligence::process_text_with_system_prompt(&system_prompt, &note.body, 0)
+        {
+            if !res.trim().is_empty() {
+                summary = Some(strip_invisible_chars(&res));
+            }
+        }
     }
-    let summary = run_llm_prompt(&settings, &note.body, crate::utter::NOTE_SUMMARY_PROMPT)
-        .await
-        .ok_or_else(|| "The AI provider returned no summary".to_string())?;
+
+    // 3. Fall back to local on-device intelligent summarizer
+    let summary =
+        summary.unwrap_or_else(|| crate::utter::local_summarize_note(&note.body, &template));
+
     notes
-        .set_summary(id, Some(summary.trim()))
+        .set_summary(id, Some(summary.trim()), Some(&template))
         .map_err(|e| e.to_string())?;
+
+    if crate::utter::is_auto_title(&note.title, &note.body) {
+        let excerpt: String = note.body.chars().take(4_000).collect();
+        let title = if let Some(t) =
+            run_llm_prompt(&settings, &excerpt, crate::utter::NOTE_TITLE_PROMPT)
+                .await
+                .as_deref()
+                .and_then(crate::utter::clean_ai_title)
+        {
+            Some(t)
+        } else {
+            Some(crate::utter::local_note_title(&note.body))
+        };
+        if let Some(title) = title {
+            let still_auto = notes
+                .get(id)
+                .ok()
+                .flatten()
+                .is_some_and(|n| crate::utter::is_auto_title(&n.title, &n.body));
+            if still_auto {
+                if let Err(e) = notes.set_title(id, &title) {
+                    warn!("Could not store note title: {e}");
+                }
+            }
+        }
+    }
     Ok(summary)
+}
+
+/// An answer from Ask-your-notes and the notes it drew on.
+#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+pub struct NotesAnswer {
+    pub answer: String,
+    /// `(id, title)` of the notes cited, or of every note consulted when the
+    /// answer cites none.
+    pub sources: Vec<NoteSource>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+pub struct NoteSource {
+    pub id: i64,
+    pub title: String,
+}
+
+/// Answers `question` from the user's notes.
+pub(crate) async fn ask_notes(app: &AppHandle, question: &str) -> Result<NotesAnswer, String> {
+    if question.trim().is_empty() {
+        return Err("Ask a question first".into());
+    }
+    let settings = get_settings(app);
+    let notes = app
+        .state::<Arc<crate::managers::notes::NotesManager>>()
+        .list(None)
+        .map_err(|e| e.to_string())?;
+    if notes.is_empty() {
+        return Err("You have no notes yet".into());
+    }
+    let contexts: Vec<crate::utter::NoteContext<'_>> = notes
+        .iter()
+        .map(|n| crate::utter::NoteContext {
+            id: n.id,
+            title: &n.title,
+            body: &n.body,
+            summary: n.summary.as_deref(),
+            tags: &n.tags,
+            created_at: n.created_at,
+        })
+        .collect();
+    let picked: Vec<&crate::utter::NoteContext<'_>> =
+        crate::utter::rank_notes(question, &contexts, 6)
+            .into_iter()
+            .map(|i| &contexts[i])
+            .collect();
+    let prompt = crate::utter::ask_notes_prompt(&picked);
+    let mut answer = run_llm_prompt(&settings, question.trim(), &prompt).await;
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    if answer.is_none() && apple_intelligence::check_apple_intelligence_availability() {
+        let system_prompt = build_system_prompt(&prompt);
+        if let Ok(res) =
+            apple_intelligence::process_text_with_system_prompt(&system_prompt, question.trim(), 0)
+        {
+            if !res.trim().is_empty() {
+                answer = Some(strip_invisible_chars(&res));
+            }
+        }
+    }
+
+    if let Some(ans) = answer {
+        let cited = crate::utter::cited_note_ids(&ans);
+        let sources = picked
+            .iter()
+            .filter(|n| cited.is_empty() || cited.contains(&n.id))
+            .map(|n| NoteSource {
+                id: n.id,
+                title: n.title.to_string(),
+            })
+            .collect();
+        Ok(NotesAnswer {
+            answer: ans.trim().to_string(),
+            sources,
+        })
+    } else {
+        let (ans, cited_ids) = crate::utter::local_ask_notes(question.trim(), &picked);
+        let sources = picked
+            .iter()
+            .filter(|n| cited_ids.is_empty() || cited_ids.contains(&n.id))
+            .map(|n| NoteSource {
+                id: n.id,
+                title: n.title.to_string(),
+            })
+            .collect();
+        Ok(NotesAnswer {
+            answer: ans,
+            sources,
+        })
+    }
+}
+
+/// Builds today's digest note from everything dictated and noted since local
+/// midnight, and returns it.
+pub(crate) async fn create_daily_digest(
+    app: &AppHandle,
+) -> Result<crate::managers::notes::Note, String> {
+    use crate::managers::notes::kind;
+    let settings = get_settings(app);
+    let now = chrono::Local::now();
+    let midnight = now
+        .date_naive()
+        .and_hms_opt(0, 0, 0)
+        .and_then(|t| t.and_local_timezone(chrono::Local).earliest())
+        .map(|t| t.timestamp())
+        .unwrap_or_else(|| now.timestamp() - 86_400);
+    let time_of = |ts: i64| {
+        chrono::DateTime::from_timestamp(ts, 0)
+            .map(|d| d.with_timezone(&chrono::Local).format("%H:%M").to_string())
+            .unwrap_or_default()
+    };
+
+    let mut log = String::new();
+    let entries = app
+        .state::<Arc<HistoryManager>>()
+        .entries_since(midnight)
+        .map_err(|e| e.to_string())?;
+    for entry in &entries {
+        let text = entry
+            .post_processed_text
+            .as_deref()
+            .unwrap_or(&entry.transcription_text);
+        log.push_str(&format!(
+            "[{}] (dictation) {}\n",
+            time_of(entry.timestamp),
+            text.trim()
+        ));
+    }
+    let notes_manager = Arc::clone(&app.state::<Arc<crate::managers::notes::NotesManager>>());
+    let notes = notes_manager
+        .changed_since(midnight)
+        .map_err(|e| e.to_string())?;
+    for note in notes.iter().filter(|n| n.kind != kind::DIGEST) {
+        let content = note.summary.as_deref().unwrap_or(&note.body);
+        log.push_str(&format!(
+            "[{}] (note: {}) {}\n",
+            time_of(note.created_at),
+            note.title,
+            content.trim()
+        ));
+    }
+    if log.trim().is_empty() {
+        if let Ok(all_notes) = notes_manager.list(None) {
+            for note in all_notes.iter().filter(|n| n.kind != kind::DIGEST).take(5) {
+                let content = note.summary.as_deref().unwrap_or(&note.body);
+                log.push_str(&format!(
+                    "[{}] (note: {}) {}\n",
+                    time_of(note.created_at),
+                    note.title,
+                    content.trim()
+                ));
+            }
+        }
+    }
+    if log.trim().is_empty() {
+        return Err("Nothing dictated or noted yet. Create a note or dictate first!".into());
+    }
+    // Keep the request a sensible size on very busy days.
+    let log: String = log
+        .chars()
+        .rev()
+        .take(60_000)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
+
+    let mut digest = run_llm_prompt(&settings, &log, crate::utter::DAILY_DIGEST_PROMPT).await;
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    if digest.is_none() && apple_intelligence::check_apple_intelligence_availability() {
+        let system_prompt = build_system_prompt(crate::utter::DAILY_DIGEST_PROMPT);
+        if let Ok(res) =
+            apple_intelligence::process_text_with_system_prompt(&system_prompt, &log, 0)
+        {
+            if !res.trim().is_empty() {
+                digest = Some(strip_invisible_chars(&res));
+            }
+        }
+    }
+
+    let digest = digest.unwrap_or_else(|| crate::utter::local_daily_digest(&log));
+    let title = format!("Daily digest · {}", now.format("%a %d %b %Y"));
+    let note = notes_manager
+        .create(&title, log.trim(), None, 0.0, kind::DIGEST)
+        .map_err(|e| e.to_string())?;
+    notes_manager
+        .set_summary(note.id, Some(digest.trim()), Some("digest"))
+        .map_err(|e| e.to_string())?;
+    notes_manager
+        .get(note.id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "The digest note vanished".to_string())
 }
 
 /// Field name for structured output JSON schema
@@ -251,6 +509,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool {
     style == OverlayStyle::Live && is_streaming
 }
@@ -295,14 +554,44 @@ async fn post_process_transcription(
     settings: &AppSettings,
     transcription: &str,
     front_app: Option<&crate::utter::FrontApp>,
+    screen_ctx: Option<&crate::utter::ScreenContext>,
 ) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
     }
-    let (_, prompt) = resolve_cleanup_prompt(settings, front_app)?;
-    let contextual_prompt = crate::utter::inject_app_context(&prompt, front_app);
-    run_llm_prompt(settings, transcription, &contextual_prompt).await
+    let (prompt_id, prompt) = resolve_cleanup_prompt(settings, front_app)
+        .unwrap_or_else(|| ("default_improve_transcriptions".to_string(), "".to_string()));
+    let contextual_prompt = crate::utter::inject_app_context(
+        &prompt,
+        front_app,
+        if settings.context_awareness {
+            screen_ctx
+        } else {
+            None
+        },
+    );
+    let mut res = run_llm_prompt(settings, transcription, &contextual_prompt).await;
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    if res.is_none() && apple_intelligence::check_apple_intelligence_availability() {
+        let system_prompt = build_system_prompt(&contextual_prompt);
+        if let Ok(apple_res) =
+            apple_intelligence::process_text_with_system_prompt(&system_prompt, transcription, 0)
+        {
+            if !apple_res.trim().is_empty() {
+                res = Some(strip_invisible_chars(&apple_res));
+            }
+        }
+    }
+
+    if res.is_none() {
+        res = Some(crate::utter::local_transform_text(
+            transcription,
+            &prompt_id,
+        ));
+    }
+    res
 }
 
 /// Sends `input` through the configured post-processing provider with
@@ -517,6 +806,7 @@ pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    pub should_press_enter: bool,
 }
 
 pub(crate) async fn process_transcription_output(
@@ -537,14 +827,65 @@ pub(crate) async fn process_transcription_output_for(
     front_app: Option<&crate::utter::FrontApp>,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
-    let mut final_text = transcription.to_string();
-    let mut post_processed_text: Option<String> = None;
+    let screen_ctx = crate::utter::dictation_screen_context();
+    let sel = screen_ctx.as_ref().and_then(|c| c.selected_text.as_deref());
+
+    let mut final_text = if settings.voice_commands {
+        crate::utter::apply_voice_commands(transcription)
+    } else {
+        transcription.to_string()
+    };
+    if !settings.custom_words.is_empty() {
+        final_text = crate::utter::apply_word_replacements(&final_text, &settings.custom_words);
+    }
+    let mut post_processed_text: Option<String> =
+        (final_text != transcription).then(|| final_text.clone());
     let mut post_process_prompt: Option<String> = None;
 
-    if post_process {
-        if let Some(processed_text) =
-            post_process_transcription(&settings, &final_text, front_app).await
+    // 1. Hey Clicky / Wispr Flow direct screen or web action ("click <button>", "ask Perplexity ...")
+    if settings.voice_commands {
+        if let Some(action_desc) =
+            crate::utter::try_execute_voice_screen_action(app, &final_text, sel)
         {
+            return ProcessedTranscription {
+                final_text: String::new(),
+                post_processed_text: Some(format!("[Action] {action_desc}")),
+                post_process_prompt: Some(action_desc),
+                should_press_enter: false,
+            };
+        }
+
+        // 2. Wispr Flow inline Command Mode ("Hey Utter, ...", "Hey Flow, ...", or selection edit instruction)
+        if crate::utter::llm_available(&settings) {
+            if let Some(instruction) = crate::utter::detect_inline_voice_command(&final_text, sel) {
+                if let Some(cmd_res) = run_voice_command(app, sel, &instruction).await {
+                    return cmd_res;
+                }
+            }
+        }
+    }
+
+    // 3. Extract trailing "... press enter" before LLM so LLM sees clean text
+    let mut should_press_enter = false;
+    if settings.voice_commands {
+        let (stripped, press_enter) =
+            crate::utter::extract_trailing_press_enter(&final_text, transcription);
+        if press_enter {
+            final_text = stripped;
+            should_press_enter = true;
+            post_processed_text = Some(final_text.clone());
+        }
+    }
+
+    if post_process && !final_text.is_empty() {
+        if let Some(processed_text) =
+            post_process_transcription(&settings, &final_text, front_app, screen_ctx.as_ref()).await
+        {
+            let processed_text = if !settings.custom_words.is_empty() {
+                crate::utter::apply_word_replacements(&processed_text, &settings.custom_words)
+            } else {
+                processed_text
+            };
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
             post_process_prompt =
@@ -552,16 +893,64 @@ pub(crate) async fn process_transcription_output_for(
         }
     }
 
+    // Check trailing "... press enter" again in case LLM preserved it
+    if settings.voice_commands && !should_press_enter {
+        let (stripped, press_enter) =
+            crate::utter::extract_trailing_press_enter(&final_text, transcription);
+        if press_enter {
+            final_text = stripped;
+            should_press_enter = true;
+            post_processed_text = Some(final_text.clone());
+        }
+    }
+
+    // 4. Wispr Flow IDE @filename tagging & Slack @person tagging
+    if settings.context_awareness && !final_text.is_empty() {
+        let tagged =
+            crate::utter::apply_ide_and_slack_tagging(&final_text, front_app, screen_ctx.as_ref());
+        if tagged != final_text {
+            final_text = tagged;
+            post_processed_text = Some(final_text.clone());
+        }
+    }
+
+    // 5. Spoken snippets expansion
     let expanded = crate::utter::apply_snippets(&final_text, &settings.snippets);
     if expanded != final_text {
         final_text = expanded;
         post_processed_text = Some(final_text.clone());
     }
 
+    // 6. Apply Wispr Flow's smart cursor casing, spacing & punctuation matching
+    if settings.context_awareness && !final_text.is_empty() {
+        let style_id = resolve_cleanup_prompt(&settings, front_app).map(|(id, _)| id);
+        let before = screen_ctx.as_ref().and_then(|c| c.before_text.as_deref());
+        let after = screen_ctx.as_ref().and_then(|c| c.after_text.as_deref());
+        let nouns = screen_ctx
+            .as_ref()
+            .map(|c| c.proper_nouns.as_slice())
+            .unwrap_or(&[]);
+        let matched = crate::utter::match_casing_spacing_and_punctuation_full(
+            &final_text,
+            before,
+            sel,
+            after,
+            nouns,
+            &settings.custom_words,
+            style_id.as_deref(),
+            crate::utter::is_messaging_app(front_app),
+        );
+        if matched != final_text {
+            final_text = matched;
+            post_processed_text = Some(final_text.clone());
+        }
+    }
+
     ProcessedTranscription {
         final_text,
         post_processed_text,
         post_process_prompt,
+        should_press_enter,
     }
 }
 
@@ -577,23 +966,49 @@ async fn run_voice_command(
             final_text: String::new(),
             post_processed_text: None,
             post_process_prompt: None,
+            should_press_enter: false,
+        });
+    }
+    if let Some(action_desc) =
+        crate::utter::try_execute_voice_screen_action(app, instruction, selection)
+    {
+        return Some(ProcessedTranscription {
+            final_text: String::new(),
+            post_processed_text: Some(format!("[Action] {action_desc}")),
+            post_process_prompt: Some(action_desc),
+            should_press_enter: false,
         });
     }
     let settings = get_settings(app);
-    if !crate::utter::llm_available(&settings) {
-        return None;
-    }
     debug!(
         "Command mode: instruction '{}', selection {} chars",
         utils::redact_text(instruction),
         selection.map_or(0, str::len)
     );
     let (input, prompt) = crate::utter::command_request(selection, instruction);
-    let output = run_llm_prompt(&settings, &input, &prompt).await?;
+    let mut output = run_llm_prompt(&settings, &input, &prompt).await;
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    if output.is_none() && apple_intelligence::check_apple_intelligence_availability() {
+        let system_prompt = build_system_prompt(&prompt);
+        if let Ok(res) =
+            apple_intelligence::process_text_with_system_prompt(&system_prompt, &input, 0)
+        {
+            if !res.trim().is_empty() {
+                output = Some(strip_invisible_chars(&res));
+            }
+        }
+    }
+
+    let output = output.unwrap_or_else(|| {
+        crate::utter::local_transform_text(selection.unwrap_or(instruction), instruction)
+    });
+
     Some(ProcessedTranscription {
         final_text: output.trim().to_string(),
         post_processed_text: Some(output.trim().to_string()),
         post_process_prompt: Some(format!("Command: {}", instruction.trim())),
+        should_press_enter: false,
     })
 }
 
@@ -674,12 +1089,9 @@ impl ShortcutAction for TranscribeAction {
         }
         let plan_elapsed = plan_started.elapsed();
 
-        // Sizing the overlay follows the same advertised capability. A model that
-        // doesn't stream (or whose capability is not known yet) gets the compact
-        // pill instead of an oversized transparent live window.
+        // Overlay: compact Wispr Flow floating capsule
         let overlay_started = Instant::now();
         match settings.overlay_style {
-            OverlayStyle::Live if model_supports_streaming => utils::show_streaming_overlay(app),
             OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
             OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
         }
@@ -800,15 +1212,9 @@ impl ShortcutAction for TranscribeAction {
         // the larger panel, but it still switches from listening to a working
         // spinner while the stream finalizes. Non-streaming paths use the
         // compact transcribing pill (None no-ops in show_*).
-        let style = get_settings(app).overlay_style;
-        // Capture this before finalizing the stream so every later working state
-        // targets the same overlay that was shown for this transcription.
-        let use_streaming_overlay = should_use_streaming_overlay(style, tm.is_streaming());
-        if use_streaming_overlay {
-            tm.emit_stream_working(StreamWorkKind::Transcribing);
-        } else {
-            show_transcribing_overlay(app);
-        }
+        let _style = get_settings(app).overlay_style;
+        let use_streaming_overlay = false;
+        show_transcribing_overlay(app);
 
         // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
@@ -1064,6 +1470,7 @@ impl ShortcutAction for TranscribeAction {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
+                                let should_press_enter = processed.should_press_enter;
                                 let rm_for_paste = Arc::clone(&rm);
                                 // Taken before the paste thread exists, and so
                                 // before the next session can start.
@@ -1089,6 +1496,25 @@ impl ShortcutAction for TranscribeAction {
                                                         "Text pasted successfully in {:?}",
                                                         paste_time.elapsed()
                                                     );
+                                                    if should_press_enter {
+                                                        std::thread::sleep(Duration::from_millis(
+                                                            50,
+                                                        ));
+                                                        let _ = crate::clipboard::with_enigo(
+                                                            &ah_clone,
+                                                            |enigo| {
+                                                                use enigo::{
+                                                                    Direction, Key, Keyboard,
+                                                                };
+                                                                enigo
+                                                                    .key(
+                                                                        Key::Return,
+                                                                        Direction::Click,
+                                                                    )
+                                                                    .map_err(|e| e.to_string())
+                                                            },
+                                                        );
+                                                    }
                                                     TranscriptionOutcome::Typed
                                                 }
                                                 Err(e) => {

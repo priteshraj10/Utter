@@ -744,6 +744,7 @@ impl TranscriptionManager {
     }
 
     /// Whether a live streaming run is currently in flight.
+    #[allow(dead_code)]
     pub fn is_streaming(&self) -> bool {
         self.stream_active.load(Ordering::Acquire)
     }
@@ -1317,7 +1318,7 @@ fn run_setup(info: &LoadedInfo, settings: &AppSettings, language: LanguageDecisi
         task: run_plan.task,
         language: run_plan.language,
         target_language: run_plan.target_language,
-        vocabulary: vocabulary_for_model(info.supports_vocabulary, &settings.custom_words),
+        vocabulary: vocabulary_for_model(info.supports_vocabulary, settings),
         ..Default::default()
     };
 
@@ -1552,13 +1553,28 @@ fn with_model_detected_language(
 
 /// Custom words for transcribe-cpp's `vocabulary` slot, in priority order.
 /// Empty for models without Feature::Vocabulary, which would warn on every run
-/// and rely on fuzzy correction instead.
-fn vocabulary_for_model(supports_vocabulary: bool, custom_words: &[String]) -> Vec<String> {
-    if supports_vocabulary {
-        custom_words.to_vec()
-    } else {
-        Vec::new()
+/// and rely on fuzzy correction instead. Also appends proper nouns & IDE file
+/// names extracted from the active screen when Screen-Aware Dictation is on.
+fn vocabulary_for_model(supports_vocabulary: bool, settings: &AppSettings) -> Vec<String> {
+    if !supports_vocabulary {
+        return Vec::new();
     }
+    let mut vocab = crate::utter::target_vocabulary_words(&settings.custom_words);
+    if settings.context_awareness {
+        if let Some(ctx) = crate::utter::dictation_screen_context() {
+            for file in ctx.ide_files.into_iter().take(12) {
+                if !vocab.iter().any(|v| v.eq_ignore_ascii_case(&file)) {
+                    vocab.push(file);
+                }
+            }
+            for noun in ctx.proper_nouns.into_iter().take(20) {
+                if !vocab.iter().any(|v| v.eq_ignore_ascii_case(&noun)) {
+                    vocab.push(noun);
+                }
+            }
+        }
+    }
+    vocab
 }
 
 struct TranscribeCppRunPlan {
@@ -1640,12 +1656,15 @@ fn post_process_transcription_text(
             _ => raw,
         };
 
-        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
-            apply_custom_words(
-                &raw,
-                &settings.custom_words,
-                settings.word_correction_threshold,
-            )
+        let raw = if !settings.custom_words.is_empty() {
+            crate::utter::apply_word_replacements(&raw, &settings.custom_words)
+        } else {
+            raw
+        };
+
+        let target_words = crate::utter::target_vocabulary_words(&settings.custom_words);
+        let corrected = if !target_words.is_empty() && !custom_words_already_prompted {
+            apply_custom_words(&raw, &target_words, settings.word_correction_threshold)
         } else {
             raw
         };

@@ -285,72 +285,18 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
-  // ---- Live overlay: a pill that sculpts open into a panel ----
-  if (state === "streaming") {
-    const hasText =
-      streamText.committed.length > 0 || streamText.tentative.length > 0;
-    const working = phase === "working";
-    // While listening, a slow model load opens the panel with a notice where the
-    // text would be, so speech that isn't transcribing yet doesn't look ignored.
-    const loadingNotice = modelLoadSlow && !working && !hasText;
-    // Keep the panel open whenever there's text — even while finalizing — so the
-    // transcript stays put under a working spinner instead of collapsing and
-    // squishing the text mid-stream. Only fall back to the small working pill
-    // when there was no text to preserve.
-    const open = hasText || loadingNotice || (loadNoticeShown && !working);
-    const collapsed = working && !hasText;
-
-    return (
-      <div dir={direction} className={`ov-stage ${position}`}>
-        <div
-          key={session}
-          className={`scard ${open ? "open" : ""} ${collapsed ? "working" : ""} ${
-            isVisible ? "" : "leaving"
-          }`}
-        >
-          <div className="stext">
-            <div className="stext-clip">
-              <div
-                className={`stext-cap ${overflowing ? "overflowing" : ""}`}
-                ref={capRef}
-                onScroll={handleStreamScroll}
-              >
-                <p>
-                  {loadingNotice && (
-                    <span className="sloading">
-                      {t("overlay.loadingModel")}
-                    </span>
-                  )}
-                  <span className="committed">
-                    {streamText.committed ? streamText.committed + " " : ""}
-                  </span>
-                  <span className="tentative">{streamText.tentative}</span>
-                  {/* Drop the blinking caret once finalizing — it's no longer
-                      capturing, and a static spinner conveys the work. */}
-                  {!working && !loadingNotice && <span className="scaret" />}
-                </p>
-              </div>
-            </div>
-          </div>
-          {working
-            ? workingRow(
-                workKind === "polishing"
-                  ? t("overlay.processing")
-                  : transcribingLabel,
-                true,
-              )
-            : listeningRow(open, true)}
-        </div>
-      </div>
-    );
-  }
-
-  // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
-  // spinner + label (transcribing / processing). Never both. The pill animates its
-  // width between them; the cancel button is in both rows so it stays put.
-  const working = state === "transcribing" || state === "processing";
+  // Wispr Flow style: Overlay is always the sleek compact capsule pill.
+  // While speaking, it animates the waveform without displaying a bulky text box.
+  // When finalizing or processing, it smoothly shows the spinner and status.
+  const working =
+    state === "transcribing" ||
+    state === "processing" ||
+    (state === "streaming" && phase === "working");
   const workLabel =
-    state === "processing" ? t("overlay.processing") : transcribingLabel;
+    state === "processing" ||
+    (state === "streaming" && workKind === "polishing")
+      ? t("overlay.processing")
+      : transcribingLabel;
 
   return (
     <div
@@ -360,7 +306,7 @@ const RecordingOverlay: React.FC = () => {
       <div
         className={`scard compact ${working && isVisible ? "cworking" : ""}`}
       >
-        {working ? workingRow(workLabel, true) : listeningRow(false, true)}
+        {working ? workingRow(workLabel, true) : listeningRow(true, true)}
       </div>
     </div>
   );

@@ -50,16 +50,15 @@ const OVERLAY_WIDTH: f64 = 256.0;
 const OVERLAY_HEIGHT: f64 = 50.0;
 
 // Actual is 394x118, just a little extra
+#[allow(dead_code)]
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
+#[allow(dead_code)]
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
 /// Overlay window size (logical) for a given UI state.
-fn overlay_dimensions(state: &str) -> (f64, f64) {
-    if state == "streaming" {
-        (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
-    } else {
-        (OVERLAY_WIDTH, OVERLAY_HEIGHT)
-    }
+/// Utter matches Wispr Flow's sleek compact floating capsule.
+fn overlay_dimensions(_state: &str) -> (f64, f64) {
+    (OVERLAY_WIDTH, OVERLAY_HEIGHT)
 }
 
 static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
@@ -616,6 +615,7 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
 }
 
 /// Shows the larger streaming overlay that displays live transcription text
+#[allow(dead_code)]
 pub fn show_streaming_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "streaming");
 }

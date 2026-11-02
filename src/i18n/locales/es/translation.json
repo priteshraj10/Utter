@@ -19,7 +19,12 @@
     "about": "Acerca de",
     "notes": "Notes",
     "stats": "Stats",
-    "personalize": "Personalize"
+    "personalize": "Personalize",
+    "style": "Style",
+    "dictionary": "Dictionary",
+    "snippets": "Snippets",
+    "transforms": "Transforms",
+    "tasks": "My Tasks"
   },
   "onboarding": {
     "customModelDescription": "Sin soporte oficial",
@@ -958,9 +963,55 @@
         "packProduct": "Product & Design",
         "packBusiness": "Business & Finance",
         "packAdded": "Added {{count}} words to your dictionary",
-        "packAlreadyAdded": "All words in this pack are already in your dictionary"
+        "packAlreadyAdded": "All words in this pack are already in your dictionary",
+        "subtitle": "Add custom names, technical terms, or automatic misspelling replacement rules.",
+        "addWordLabel": "Add vocabulary word or phrase",
+        "addRuleLabel": "Add misspelling replacement rule",
+        "misspellingPlaceholder": "Misheard (e.g. whisper flow)",
+        "replacementPlaceholder": "Correct (e.g. Wispr Flow)",
+        "searchPlaceholder": "Search dictionary words and replacement rules…",
+        "empty": "No dictionary words match your search.",
+        "replacementBadge": "Replacement"
       },
-      "remove": "Remove"
+      "remove": "Remove",
+      "contextAwareness": {
+        "title": "Screen-Aware Dictation & Vibe Coding",
+        "description": "Reads the active window title, text around your cursor, proper nouns, and open IDE filenames via Accessibility so names, code symbols, and mid-sentence spacing are 100% accurate."
+      },
+      "styleCards": {
+        "heading": "Style",
+        "subheading": "Choose how Utter formats your speech across personal chats, work apps, email, and code.",
+        "tabPersonal": "Personal messages",
+        "tabWork": "Work messages",
+        "tabEmail": "Email",
+        "tabOther": "Other",
+        "appliesToApps": "Applies to:",
+        "formalTitle": "Formal.",
+        "formalSubtitle": "Complete sentences, proper capitalization & punctuation",
+        "casualTitle": "Casual",
+        "casualSubtitle": "Relaxed and friendly, no trailing period on short messages",
+        "veryCasualTitle": "very casual",
+        "veryCasualSubtitle": "Lowercase sentence starts, minimal punctuation",
+        "excitedTitle": "Excited!",
+        "excitedSubtitle": "Warm, energetic tone with natural exclamation marks",
+        "active": "Active",
+        "apply": "Use style",
+        "appliedToast": "Updated style for this category"
+      },
+      "transforms": {
+        "title": "Transforms",
+        "subtitle": "One-click and automatic AI rewrites for dictation, coding prompts, and notes.",
+        "autoApplyAfterDictation": "Auto apply after dictation",
+        "polishTitle": "Polish",
+        "polishDesc": "Fixes grammar, removes filler words and false starts, and preserves your exact meaning.",
+        "promptEngineerTitle": "Prompt Engineer",
+        "promptEngineerDesc": "Turns messy spoken thoughts into a structured, high-signal prompt for Cursor, Claude, or ChatGPT.",
+        "conciseTitle": "Concise",
+        "conciseDesc": "Cuts redundant phrasing while keeping every key fact intact.",
+        "codeTitle": "Vibe Coding & Technical",
+        "codeDesc": "Preserves camelCase, snake_case, CLI flags, and wraps identifiers in backticks.",
+        "defaultTransformLabel": "Default dictation transform"
+      }
     }
   },
   "footer": {
@@ -988,7 +1039,8 @@
     "open": "Abrir",
     "copy": "Copiar",
     "clear": "Limpiar",
-    "noOptionsFound": "No se encontraron opciones"
+    "noOptionsFound": "No se encontraron opciones",
+    "refresh": "Refresh"
   },
   "errors": {
     "loadDirectory": "Error al cargar el directorio: {{error}}",
@@ -1057,7 +1109,79 @@
     "delete": "Delete note",
     "bodyPlaceholder": "Type, or record to add a transcript…",
     "aiRewriteLabel": "AI Transform:",
-    "transformActionItems": "Action Items"
+    "transformActionItems": "Action Items",
+    "recordMeeting": "Record Meeting / Note",
+    "introFeatures": {
+      "templates": "11 structured AI templates (Meeting, Standup, 1:1, Lecture, Interview, Action Items, TL;DR)",
+      "ask": "Ask your notes anything with cited answers across your entire knowledge base",
+      "actions": "Automatic action-item extraction and task tracking across all meetings",
+      "digest": "One-click Daily Digest combining today's dictations and voice notes"
+    },
+    "pin": "Pin note",
+    "unpin": "Unpin note",
+    "copyMarkdown": "Copy as Markdown",
+    "transformTranslate": "Translate to English",
+    "tabs": {
+      "notes": "Notes",
+      "ask": "Ask Notes",
+      "actions": "Action Items"
+    },
+    "filters": {
+      "all": "All",
+      "pinned": "Pinned",
+      "meeting": "Meetings",
+      "voice": "Voice",
+      "text": "Text",
+      "digest": "Digests"
+    },
+    "templates": {
+      "label": "Summary template",
+      "auto": "Auto Summary",
+      "meeting": "Meeting Notes",
+      "lecture": "Lecture Notes",
+      "interview": "Interview Debrief",
+      "one_on_one": "1:1 Meeting",
+      "standup": "Daily Standup",
+      "brainstorm": "Brainstorm",
+      "action_items": "Action Items Only",
+      "tldr": "TL;DR Brief",
+      "follow_up_email": "Follow-Up Email",
+      "journal": "Voice Journal"
+    },
+    "tags": {
+      "add": "+ tag",
+      "remove": "Remove tag"
+    },
+    "markdown": {
+      "summary": "Summary",
+      "transcript": "Transcript"
+    },
+    "digest": {
+      "button": "Daily Digest",
+      "working": "Creating digest…",
+      "hint": "Summarize today's dictations and notes into a daily digest",
+      "created": "Daily digest created"
+    },
+    "ask": {
+      "title": "Ask anything across your notes",
+      "description": "Utter searches your meeting transcripts, summaries, and voice notes to answer with direct citations.",
+      "placeholder": "Ask a question about your notes…",
+      "send": "Ask",
+      "thinking": "Searching and synthesizing notes…",
+      "sources": "Sources:",
+      "suggestions": {
+        "actionItems": "What are my open action items?",
+        "decisions": "What key decisions were made recently?",
+        "thisWeek": "Summarize everything I worked on this week",
+        "followUps": "Who do I need to follow up with?"
+      }
+    },
+    "actions": {
+      "openCount_one": "{{count}} open action item",
+      "openCount_other": "{{count}} open action items",
+      "showDone": "Show completed",
+      "empty": "No open action items across your notes."
+    }
   },
   "flow": {
     "heroTitle": "Utter Flow Studio",
@@ -1083,8 +1207,20 @@
       "email": "Email",
       "bullets": "Bullet List",
       "code": "Code & Tech",
-      "snippets": "Expand Snippets"
-    }
+      "snippets": "Expand Snippets",
+      "promptEngineer": "Prompt Engineer"
+    },
+    "welcomeBack": "Welcome back",
+    "appsPill": "apps",
+    "holdToDictateHeading": "Hold {{shortcut}} in any app to dictate",
+    "holdToDictateBody": "Utter automatically removes filler words, adapts to your active app and cursor context, spells names and code symbols visible on screen, and formats text in your personal style.",
+    "screenAwarePill": "Screen-Aware",
+    "screenContextLabel": "Screen context",
+    "anyFocusedApp": "Any focused app",
+    "recentDictationsTitle": "Dictation history",
+    "todaysDictations": "Today's dictations",
+    "yesterdaysDictations": "Yesterday's dictations",
+    "emptyFeedSubtitle": "Hold your dictation shortcut in any app and speak naturally."
   },
   "stats": {
     "loading": "Loading stats…",

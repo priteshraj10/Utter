@@ -1,9 +1,7 @@
 import UtterMark from "./UtterMark";
 
-const BRAND = "utter";
+const BRAND = "Utter";
 
-// Wordmark: the mark followed by the product name. The name is a brand, not
-// translatable copy, so it is rendered as plain SVG text.
 const UtterTextLogo = ({
   width,
   className,
@@ -13,25 +11,20 @@ const UtterTextLogo = ({
   className?: string;
 }) => (
   <div
-    className={`flex items-center gap-2 ${className ?? ""}`}
+    className={`flex items-center gap-2.5 ${className ?? ""}`}
     style={{ width }}
   >
-    <UtterMark width={34} height={34} />
-    <svg
-      viewBox="0 0 120 40"
-      width={(width ?? 120) - 42}
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Utter"
+    <UtterMark width={28} height={28} />
+    <span
+      className="text-lg font-semibold tracking-tight text-text select-none"
+      style={{
+        fontFamily: 'var(--font-serif), "EB Garamond", Georgia, serif',
+        fontSize: "21px",
+        letterSpacing: "-0.02em",
+      }}
     >
-      <text
-        x="0"
-        y="31"
-        className="fill-text"
-        style={{ font: "700 34px ui-rounded, system-ui, sans-serif" }}
-      >
-        {BRAND}
-      </text>
-    </svg>
+      {BRAND}
+    </span>
   </div>
 );
 
