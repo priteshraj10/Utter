@@ -96,10 +96,8 @@ const RecordingOverlay: React.FC = () => {
             );
             if (settings.data.translate_to_english) {
               setModeBadge(t("overlay.modes.translate"));
-            } else if (settings.data.post_process_enabled) {
-              setModeBadge(t("overlay.modes.ai"));
             } else {
-              setModeBadge(t("overlay.modes.flow"));
+              setModeBadge(null);
             }
           }
         } catch {

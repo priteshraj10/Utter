@@ -5,28 +5,20 @@ import { listen } from "@tauri-apps/api/event";
 import {
   BookOpen,
   Check,
-  Code2,
   Copy,
-  Eye,
   Flame,
   Gauge,
   Mic,
-  NotebookPen,
-  RefreshCw,
   RotateCcw,
   Search,
   Sparkles,
   Trash2,
-  Volume2,
-  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   commands,
   events,
-  type DictationMemoryItem,
   type HistoryEntry,
-  type ScreenContext,
   type UsageStats,
 } from "@/bindings";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
@@ -46,20 +38,7 @@ import { PreferredLanguages } from "../PreferredLanguages";
 import { ChineseScriptSetting } from "../ChineseScript";
 import { isChinese } from "@/lib/utils/languageSuggestions";
 import { Button } from "../../ui/Button";
-import { Select } from "../../ui/Select";
 import { copyToClipboard } from "../history/clipboard";
-
-const QUICK_TRANSFORMS = [
-  { id: "default_improve_transcriptions", key: "flow.transforms.cleanUp" },
-  { id: "style_prompt_engineer", key: "flow.transforms.promptEngineer" },
-  { id: "style_concise", key: "flow.transforms.concise" },
-  { id: "style_formal", key: "flow.transforms.formal" },
-  { id: "style_casual", key: "flow.transforms.casual" },
-  { id: "style_email", key: "flow.transforms.email" },
-  { id: "style_bullets", key: "flow.transforms.bullets" },
-  { id: "style_code", key: "flow.transforms.code" },
-  { id: "snippets_only", key: "flow.transforms.snippets" },
-] as const;
 
 const groupEntriesByDay = (
   entries: HistoryEntry[],
@@ -104,19 +83,12 @@ const FlowHomeHub: React.FC = () => {
   const osType = useOsType();
   const { getSetting, updateSetting, refreshSettings } = useSettings();
   const [stats, setStats] = useState<UsageStats | null>(null);
-  const [screenCtx, setScreenCtx] = useState<ScreenContext | null>(null);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [scratchOpen, setScratchOpen] = useState(true);
-  const [scratchText, setScratchText] = useState("");
-  const [customCmd, setCustomCmd] = useState("");
-  const [transforming, setTransforming] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
-  const [rawMap, setRawMap] = useState<Record<number, boolean>>({});
   const [micLevels, setMicLevels] = useState<number[]>(Array(7).fill(0));
-  const [memory, setMemory] = useState<DictationMemoryItem[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,28 +118,13 @@ const FlowHomeHub: React.FC = () => {
   const commandKey = bindings?.command_mode?.current_binding;
   const noteKey = bindings?.voice_note?.current_binding;
 
-  const aiEnabled = getSetting("post_process_enabled") ?? false;
-  const autoCleanup = getSetting("auto_cleanup") ?? false;
-  const whisperMode = getSetting("whisper_mode") ?? false;
-  const contextAwareness = getSetting("context_awareness") ?? true;
-  const prompts = getSetting("post_process_prompts") ?? [];
-  const selectedPromptId =
-    getSetting("post_process_selected_prompt_id") ??
-    "default_improve_transcriptions";
-
-  const promptOptions = prompts.map((p) => ({ value: p.id, label: p.name }));
-
   const loadData = useCallback(async () => {
-    const [statsRes, histRes, ctxRes, memRes] = await Promise.all([
+    const [statsRes, histRes] = await Promise.all([
       commands.getUsageStats(),
       commands.getHistoryEntries(null, 25),
-      commands.getScreenContext(),
-      commands.getDictationContextMemory(),
     ]);
     if (statsRes.status === "ok") setStats(statsRes.data);
     if (histRes.status === "ok") setEntries(histRes.data.entries);
-    setScreenCtx(ctxRes);
-    setMemory(memRes);
   }, []);
 
   useEffect(() => {
@@ -203,33 +160,6 @@ const FlowHomeHub: React.FC = () => {
       if (unlistenHistoryFn) unlistenHistoryFn();
     };
   }, [loadData]);
-
-  const runTransform = async (instruction: string) => {
-    if (!scratchText.trim() || !instruction.trim()) return;
-    setTransforming(true);
-    const res = await commands.transformText(scratchText, instruction);
-    setTransforming(false);
-    if (res.status === "ok") {
-      setScratchText(res.data);
-    } else {
-      toast.error(res.error);
-    }
-  };
-
-  const handleSaveScratchAsNote = async () => {
-    if (!scratchText.trim()) return;
-    const firstLine =
-      scratchText
-        .split(/[.\n!?]/)[0]
-        ?.trim()
-        .slice(0, 60) || t("notes.untitled");
-    const res = await commands.createNote(firstLine, scratchText.trim());
-    if (res.status === "ok") {
-      toast.success(t("flow.savedToNotes"));
-    } else {
-      toast.error(res.error);
-    }
-  };
 
   const handleLearnFromEdit = async (original: string) => {
     const res = await commands.learnWordsFromEdit(original, editDraft);
@@ -342,84 +272,22 @@ const FlowHomeHub: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={async () => {
-                if (!aiEnabled) {
-                  await updateSetting("post_process_enabled", true);
-                  await updateSetting("auto_cleanup", true);
-                } else {
-                  await updateSetting("auto_cleanup", !autoCleanup);
-                }
-              }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                aiEnabled && autoCleanup
-                  ? "bg-text text-background border-text"
-                  : "bg-surface border-line text-ink-2 hover:border-ink-2"
-              }`}
-            >
-              <Wand2 size={12} />
-              {t("flow.aiCleanupPill")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void updateSetting("context_awareness", !contextAwareness);
-              }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                contextAwareness
-                  ? "bg-text text-background border-text"
-                  : "bg-surface border-line text-ink-2 hover:border-ink-2"
-              }`}
-              title={t("settings.personalize.contextAwareness.description")}
-            >
-              <Eye size={12} />
-              {t("flow.screenAwarePill")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void updateSetting("whisper_mode", !whisperMode);
-              }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                whisperMode
-                  ? "bg-text text-background border-text"
-                  : "bg-surface border-line text-ink-2 hover:border-ink-2"
-              }`}
-            >
-              <Volume2 size={12} />
-              {t("flow.whisperModePill")}
-            </button>
-            {promptOptions.length > 0 && (
-              <Select
-                className="w-38"
-                value={selectedPromptId}
-                options={promptOptions}
-                onChange={(val) => {
-                  if (val) {
-                    void updateSetting("post_process_selected_prompt_id", val);
-                  }
-                }}
-              />
-            )}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-line shadow-2xs">
-              <Mic size={12} className="text-logo-primary" />
-              <div className="flex items-center gap-0.5 h-3">
-                {micLevels.map((lvl, idx) => (
-                  <span
-                    key={`mic-level-${idx}`}
-                    className="w-1 rounded-full bg-logo-primary transition-all duration-75"
-                    style={{
-                      height: `${Math.max(3, Math.min(14, lvl * 14))}px`,
-                    }}
-                  />
-                ))}
-              </div>
-              <span className="text-[10px] text-ink-3 font-semibold uppercase tracking-wider pl-1">
-                {t("settings.general.micActive")}
-              </span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-line shadow-2xs">
+            <Mic size={12} className="text-logo-primary" />
+            <div className="flex items-center gap-0.5 h-3">
+              {micLevels.map((lvl, idx) => (
+                <span
+                  key={`mic-level-${idx}`}
+                  className="w-1 rounded-full bg-logo-primary transition-all duration-75"
+                  style={{
+                    height: `${Math.max(3, Math.min(14, lvl * 14))}px`,
+                  }}
+                />
+              ))}
             </div>
+            <span className="text-[10px] text-ink-3 font-semibold uppercase tracking-wider pl-1">
+              {t("settings.general.micActive")}
+            </span>
           </div>
         </div>
 
@@ -450,162 +318,7 @@ const FlowHomeHub: React.FC = () => {
             </kbd>
           </div>
         </div>
-
-        {/* Live Screen Context & Vibe Coding Radar */}
-        {contextAwareness && screenCtx && (
-          <div className="rounded-xl bg-surface/90 border border-line px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              <span className="inline-flex items-center gap-1 font-medium text-text">
-                <Eye size={13} className="text-logo-primary" />
-                {t("flow.screenContextLabel")}:
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-sidebar border border-line font-medium text-text">
-                {screenCtx.app_name || t("flow.anyFocusedApp")}
-              </span>
-              {screenCtx.window_title && (
-                <span className="text-ink-3 truncate max-w-xs">
-                  {screenCtx.window_title}
-                </span>
-              )}
-              {Array.from(new Set(screenCtx.ide_files ?? []))
-                .slice(0, 3)
-                .map((file, idx) => (
-                  <span
-                    key={`file-${file}-${idx}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-logo-primary/10 text-logo-primary font-mono text-tag"
-                  >
-                    <Code2 size={11} />
-                    {file}
-                  </span>
-                ))}
-              {Array.from(new Set(screenCtx.proper_nouns ?? []))
-                .slice(0, 4)
-                .map((noun, idx) => (
-                  <span
-                    key={`noun-${noun}-${idx}`}
-                    className="px-1.5 py-0.5 rounded bg-sidebar text-ink-2 text-tag"
-                  >
-                    {noun}
-                  </span>
-                ))}
-              {memory.length > 0 && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await commands.clearDictationContextMemory();
-                    setMemory([]);
-                    toast.success(t("flow.contextMemoryCleared"));
-                  }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 font-medium text-tag hover:bg-emerald-500/20 transition-colors cursor-pointer"
-                  title={t("flow.clearContextMemory")}
-                >
-                  <Sparkles size={11} />
-                  <span>
-                    {t("flow.contextMemory")}: {memory.length}
-                  </span>
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setScratchOpen(!scratchOpen)}
-                className="text-xs font-medium text-logo-primary hover:underline cursor-pointer"
-              >
-                {t("flow.scratchpadTitle")}
-              </button>
-              <button
-                type="button"
-                onClick={loadData}
-                className="p-1 rounded hover:bg-sidebar text-ink-3 hover:text-text cursor-pointer"
-                title={t("common.refresh")}
-              >
-                <RefreshCw size={12} />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Collapsible Quick Scratchpad & AI Studio */}
-      {scratchOpen && (
-        <div className="rounded-2xl border border-line bg-surface p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
-              {t("flow.scratchpadTitle")}
-            </h3>
-            <span className="text-xs text-ink-3">
-              {t("flow.scratchpadDescription")}
-            </span>
-          </div>
-          <textarea
-            value={scratchText}
-            onChange={(e) => setScratchText(e.target.value)}
-            placeholder={t("flow.scratchpadPlaceholder")}
-            className="w-full min-h-[88px] rounded-xl border border-line bg-background p-3 text-sm leading-relaxed outline-none focus:border-logo-primary resize-y"
-          />
-          <div className="flex flex-wrap items-center gap-1.5">
-            {QUICK_TRANSFORMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                disabled={transforming || !scratchText.trim()}
-                onClick={() => runTransform(item.id)}
-                className="px-2.5 py-1 rounded-lg text-xs font-medium border border-line bg-background hover:border-logo-primary disabled:opacity-40 cursor-pointer transition-colors"
-              >
-                {t(item.key)}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={customCmd}
-              onChange={(e) => setCustomCmd(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && customCmd.trim()) {
-                  void runTransform(customCmd);
-                }
-              }}
-              placeholder={t("flow.customCommandPlaceholder")}
-              className="flex-1 rounded-lg border border-line bg-background px-3 py-1.5 text-xs outline-none focus:border-logo-primary"
-            />
-            <Button
-              variant="primary-soft"
-              size="sm"
-              disabled={
-                transforming || !scratchText.trim() || !customCmd.trim()
-              }
-              onClick={() => runTransform(customCmd)}
-            >
-              <Wand2 size={13} className="mr-1" />
-              {transforming ? t("flow.transforming") : t("flow.runCommand")}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={!scratchText.trim()}
-              onClick={async () => {
-                if (await copyToClipboard(scratchText)) {
-                  toast.success(t("notes.copied"));
-                }
-              }}
-              title={t("notes.copy")}
-            >
-              <Copy size={13} />
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={!scratchText.trim()}
-              onClick={handleSaveScratchAsNote}
-              title={t("flow.saveAsNote")}
-            >
-              <NotebookPen size={13} />
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Wispr Flow Chronological Dictation Feed (Today's dictations / Yesterday's dictations) */}
       <div className="space-y-4">
@@ -640,11 +353,8 @@ const FlowHomeHub: React.FC = () => {
               </h4>
               <div className="rounded-2xl border border-line bg-surface divide-y divide-line overflow-hidden shadow-2xs">
                 {group.items.map((entry) => {
-                  const showRaw = rawMap[entry.id] ?? false;
                   const displayed =
-                    !showRaw && entry.post_processed_text
-                      ? entry.post_processed_text
-                      : entry.transcription_text;
+                    entry.post_processed_text || entry.transcription_text;
                   const timeStr = new Date(
                     entry.timestamp * 1000,
                   ).toLocaleTimeString([], {
@@ -700,25 +410,6 @@ const FlowHomeHub: React.FC = () => {
                                 {displayed ||
                                   t("settings.history.notTranscribed")}
                               </p>
-                            )}
-                            {entry.post_processed_text && !isEditing && (
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setRawMap((m) => ({
-                                      ...m,
-                                      [entry.id]: !showRaw,
-                                    }))
-                                  }
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-logo-primary/12 text-logo-primary hover:bg-logo-primary/20 cursor-pointer"
-                                >
-                                  <Sparkles size={10} />
-                                  {showRaw
-                                    ? t("settings.history.rawBadge")
-                                    : t("settings.history.aiCleanedBadge")}
-                                </button>
-                              </div>
                             )}
                           </div>
                         </div>

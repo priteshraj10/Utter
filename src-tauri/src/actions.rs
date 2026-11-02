@@ -1467,8 +1467,8 @@ impl ShortcutAction for TranscribeAction {
                             // Save to history if WAV was saved
                             if wav_saved {
                                 if let Err(err) = hm.save_entry(
-                                    file_name,
-                                    transcription,
+                                    file_name.clone(),
+                                    transcription.clone(),
                                     post_process || mode == DictationMode::Command,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
@@ -1476,6 +1476,20 @@ impl ShortcutAction for TranscribeAction {
                                 ) {
                                     error!("Failed to save history entry: {}", err);
                                 }
+                            }
+
+                            // Automatic meeting recording and notetaking:
+                            // If a recording is 30s or longer, automatically generate meeting notes,
+                            // structured summary, decisions, and action items in the background.
+                            if audio_seconds >= AUTO_SUMMARY_MIN_SECONDS
+                                && !is_blank_transcription(&transcription)
+                            {
+                                save_voice_note(
+                                    &ah,
+                                    transcription.trim(),
+                                    wav_saved.then(|| file_name.clone()),
+                                    audio_seconds,
+                                );
                             }
 
                             if processed.final_text.is_empty() {

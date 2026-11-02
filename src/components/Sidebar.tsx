@@ -93,28 +93,28 @@ export const SECTIONS_CONFIG = {
     icon: SlidersHorizontal,
     component: StyleSection,
     group: "hub",
-    enabled: () => true,
+    enabled: () => false,
   },
   dictionary: {
     labelKey: "sidebar.dictionary",
     icon: BookOpen,
     component: DictionarySection,
     group: "hub",
-    enabled: () => true,
+    enabled: () => false,
   },
   snippets: {
     labelKey: "sidebar.snippets",
     icon: TextQuote,
     component: SnippetsSection,
     group: "hub",
-    enabled: () => true,
+    enabled: () => false,
   },
   transforms: {
     labelKey: "sidebar.transforms",
     icon: Wand2,
     component: TransformsSection,
     group: "hub",
-    enabled: () => true,
+    enabled: () => false,
   },
   notes: {
     labelKey: "sidebar.notes",
@@ -128,7 +128,7 @@ export const SECTIONS_CONFIG = {
     icon: CheckSquare,
     component: TasksSection,
     group: "meetings",
-    enabled: () => true,
+    enabled: () => false,
   },
   history: {
     labelKey: "sidebar.history",
@@ -142,7 +142,7 @@ export const SECTIONS_CONFIG = {
     icon: BarChart3,
     component: StatsPage,
     group: "workspace",
-    enabled: () => true,
+    enabled: () => false,
   },
   personalize: {
     labelKey: "sidebar.personalize",
@@ -163,7 +163,7 @@ export const SECTIONS_CONFIG = {
     icon: Sparkles,
     component: PostProcessingSettings,
     group: "system",
-    enabled: (settings) => settings?.post_process_enabled ?? false,
+    enabled: () => false,
   },
   advanced: {
     labelKey: "sidebar.advanced",
@@ -237,7 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }`}
         />
         <span
-          className="text-[13px] truncate flex-1"
+          className="text-small truncate flex-1"
           title={t(section.labelKey)}
         >
           {t(section.labelKey)}
@@ -294,7 +294,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-[11px] text-ink-2 font-medium">
+            <span className="text-tag text-ink-2 font-medium">
               {t("sidebar.status.ready")}
             </span>
           </div>
