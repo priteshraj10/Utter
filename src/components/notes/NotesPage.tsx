@@ -605,7 +605,9 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
               <Video size={13} className="text-purple-400" />
             )}
             <span className="text-xs font-medium">
-              {importingAudio ? t("notes.importingMedia") : t("notes.importMedia")}
+              {importingAudio
+                ? t("notes.importingMedia")
+                : t("notes.importMedia")}
             </span>
           </Button>
 
@@ -738,7 +740,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                 const isNoteVideo = note.tags.includes("video");
                 const KindIcon = isNoteVideo
                   ? Video
-                  : KIND_ICONS[note.kind] ?? FileText;
+                  : (KIND_ICONS[note.kind] ?? FileText);
                 const isSelected = note.id === selectedId;
                 const preview = (note.summary || note.body).trim();
 

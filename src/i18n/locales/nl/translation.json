@@ -24,7 +24,17 @@
     "dictionary": "Dictionary",
     "snippets": "Snippets",
     "transforms": "Transforms",
-    "tasks": "My Tasks"
+    "tasks": "My Tasks",
+    "pro": "Pro",
+    "groups": {
+      "meetings": "Meetings & Notes",
+      "dictation": "Voice Flow",
+      "workspace": "Workspace",
+      "system": "System"
+    },
+    "status": {
+      "ready": "Ready"
+    }
   },
   "onboarding": {
     "customModelDescription": "Niet officieel ondersteund",
@@ -402,7 +412,8 @@
           "push_to_talk": "Neemt op zolang je de sneltoets ingedrukt houdt",
           "toggle": "Tik op de sneltoets om de opname te starten, tik opnieuw om te stoppen"
         }
-      }
+      },
+      "micActive": "Mic Active"
     },
     "models": {
       "title": "Modellen",
@@ -1076,7 +1087,12 @@
   "overlay": {
     "transcribing": "Transcriberen...",
     "processing": "Verwerken...",
-    "loadingModel": "Model laden..."
+    "loadingModel": "Model laden...",
+    "modes": {
+      "flow": "Flow",
+      "ai": "AI",
+      "translate": "EN"
+    }
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokkeert mogelijk 1 sneltoets",
@@ -1132,7 +1148,8 @@
       "meeting": "Meetings",
       "voice": "Voice",
       "text": "Text",
-      "digest": "Digests"
+      "digest": "Digests",
+      "video": "Videos"
     },
     "templates": {
       "label": "Summary template",
@@ -1180,7 +1197,40 @@
       "openCount_one": "{{count}} open action item",
       "openCount_other": "{{count}} open action items",
       "showDone": "Show completed",
-      "empty": "No open action items across your notes."
+      "empty": "No open action items across your notes.",
+      "emptyHint": "Action items extracted from your voice notes and meetings will appear here automatically.",
+      "allDone": "All caught up! Every action item is complete.",
+      "showDoneHint": "Turn on 'Show completed' above to see finished items.",
+      "complete": "Complete",
+      "openStatus": "{{count}} open"
+    },
+    "ai": "AI",
+    "copyFullMarkdown": "Copy Full Note (Markdown)",
+    "copySummaryOnly": "Copy Summary Only",
+    "copyActionItemsOnly": "Copy Action Items Only",
+    "exportMarkdownFile": "Save as .md File",
+    "noteExported": "Note exported successfully",
+    "summaryCopied": "Summary copied",
+    "actionsCopied": "Action items copied",
+    "importAudio": "Import Audio",
+    "importMedia": "Import Meeting (Video / Audio)",
+    "importingAudio": "Transcribing audio recording…",
+    "importingMedia": "Transcribing meeting video/audio…",
+    "importSuccess": "Meeting audio transcribed and summarized",
+    "importMediaSuccess": "Meeting transcribed & summarized with action items",
+    "audioFiles": "Audio Files",
+    "audioRecording": "Audio Recording",
+    "mediaFiles": "Audio & Video Recordings",
+    "videoPlayback": "Meeting Video Recording",
+    "videoFiles": "Video Files",
+    "startMeeting": "Record Meeting",
+    "sourceVideo": "Video",
+    "sourceAudio": "Audio",
+    "tabSummary": "AI Summary & Minutes",
+    "tabTranscript": "Full Transcript",
+    "editor": {
+      "stats": "{{words}} words · {{characters}} characters",
+      "lastUpdated": "Last updated {{date}}"
     }
   },
   "flow": {
@@ -1220,7 +1270,11 @@
     "recentDictationsTitle": "Dictation history",
     "todaysDictations": "Today's dictations",
     "yesterdaysDictations": "Yesterday's dictations",
-    "emptyFeedSubtitle": "Hold your dictation shortcut in any app and speak naturally."
+    "emptyFeedSubtitle": "Hold your dictation shortcut in any app and speak naturally.",
+    "contextMemory": "Session Memory",
+    "contextMemoryActive": "Remembering conversation context across dictations",
+    "clearContextMemory": "Clear context memory",
+    "contextMemoryCleared": "Conversation context cleared"
   },
   "stats": {
     "loading": "Loading stats…",
@@ -1246,6 +1300,8 @@
     "dayTooltip": "{{day}}: {{words}} words",
     "todayShort": "Today",
     "appsTitle": "Top apps",
-    "noApps": "Dictate into a few apps to see where you use Utter most."
+    "noApps": "Dictate into a few apps to see where you use Utter most.",
+    "wpm": "{{count}} WPM",
+    "days": "{{count}} days"
   }
 }
