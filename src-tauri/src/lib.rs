@@ -244,18 +244,29 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Choose the appropriate initial icon based on theme
     let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle, false);
 
+    let initial_image = app_handle
+        .path()
+        .resolve(initial_icon_path, tauri::path::BaseDirectory::Resource)
+        .ok()
+        .or_else(|| {
+            let stripped = initial_icon_path
+                .strip_prefix("resources/")
+                .unwrap_or(initial_icon_path);
+            app_handle
+                .path()
+                .resolve(stripped, tauri::path::BaseDirectory::Resource)
+                .ok()
+        })
+        .and_then(|p| Image::from_path(&p).ok())
+        .or_else(|| app_handle.default_window_icon().cloned());
+
     let mut tray_builder = TrayIconBuilder::new()
-        .icon(
-            Image::from_path(
-                app_handle
-                    .path()
-                    .resolve(initial_icon_path, tauri::path::BaseDirectory::Resource)
-                    .unwrap(),
-            )
-            .unwrap(),
-        )
         .tooltip(tray::tray_tooltip())
         .icon_as_template(true);
+
+    if let Some(img) = initial_image {
+        tray_builder = tray_builder.icon(img);
+    }
 
     // Windows notification-area convention: left click opens the app, right click
     // shows the menu. Elsewhere (macOS menu bar, Linux) the menu stays on left click.

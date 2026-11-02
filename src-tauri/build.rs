@@ -36,6 +36,9 @@ fn main() {
     // Must run after transcribe staging because that helper recreates transcribe-libs/.
     stage_vc_runtime_dlls();
 
+    // Rerun build script when frontend assets in ../dist change so Tauri embeds the latest assets.
+    println!("cargo:rerun-if-changed=../dist");
+
     tauri_build::build()
 }
 
