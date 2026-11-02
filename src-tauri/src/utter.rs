@@ -1834,6 +1834,129 @@ static PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
         .expect("valid paren regex")
 });
 
+static CLEAR_ALL_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"(?i)\b(?:scratch that all|scratch all|clear all|delete all|cancel dictation)\b[.,;:!?]?\s*$")
+        .build()
+        .expect("valid clear all regex")
+});
+
+fn words_from(s: &str) -> Vec<&str> {
+    s.split(|c: char| c.is_whitespace() || c == '_' || c == '-')
+        .filter(|w| !w.is_empty())
+        .collect()
+}
+
+fn to_camel_case(s: &str) -> String {
+    let words = words_from(s);
+    let mut out = String::new();
+    for (i, w) in words.iter().enumerate() {
+        if i == 0 {
+            out.push_str(&w.to_lowercase());
+        } else {
+            let mut chars = w.chars();
+            if let Some(first) = chars.next() {
+                out.extend(first.to_uppercase());
+                out.push_str(&chars.as_str().to_lowercase());
+            }
+        }
+    }
+    out
+}
+
+fn to_pascal_case(s: &str) -> String {
+    let words = words_from(s);
+    let mut out = String::new();
+    for w in words {
+        let mut chars = w.chars();
+        if let Some(first) = chars.next() {
+            out.extend(first.to_uppercase());
+            out.push_str(&chars.as_str().to_lowercase());
+        }
+    }
+    out
+}
+
+fn to_snake_case(s: &str) -> String {
+    words_from(s)
+        .into_iter()
+        .map(|w| w.to_lowercase())
+        .collect::<Vec<_>>()
+        .join("_")
+}
+
+fn to_kebab_case(s: &str) -> String {
+    words_from(s)
+        .into_iter()
+        .map(|w| w.to_lowercase())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+fn to_screaming_snake_case(s: &str) -> String {
+    words_from(s)
+        .into_iter()
+        .map(|w| w.to_uppercase())
+        .collect::<Vec<_>>()
+        .join("_")
+}
+
+fn replace_casing(re: &Regex, text: &str, transform: fn(&str) -> String) -> String {
+    re.replace_all(text, |caps: &regex::Captures| {
+        let raw = caps
+            .get(1)
+            .or_else(|| caps.get(2))
+            .map(|m| m.as_str().trim())
+            .unwrap_or("");
+        let punct = caps.name("punct").map(|m| m.as_str()).unwrap_or("");
+        format!("{}{}", transform(raw), punct)
+    })
+    .into_owned()
+}
+
+static CAMEL_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:camel case)\s+(?:([^,.\n]+?)\s*(?:close camel case|end camel case|end camel)\b|([A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+){0,3})(?P<punct>[,;:.!?]|\s*$))")
+        .case_insensitive(true)
+        .build()
+        .expect("valid camel regex")
+});
+
+static PASCAL_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:pascal case)\s+(?:([^,.\n]+?)\s*(?:close pascal case|end pascal case|end pascal)\b|([A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+){0,3})(?P<punct>[,;:.!?]|\s*$))")
+        .case_insensitive(true)
+        .build()
+        .expect("valid pascal regex")
+});
+
+static SNAKE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:snake case)\s+(?:([^,.\n]+?)\s*(?:close snake case|end snake case|end snake)\b|([A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+){0,3})(?P<punct>[,;:.!?]|\s*$))")
+        .case_insensitive(true)
+        .build()
+        .expect("valid snake regex")
+});
+
+static KEBAB_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:kebab case|dash case)\s+(?:([^,.\n]+?)\s*(?:close kebab case|end kebab case|end kebab)\b|([A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+){0,3})(?P<punct>[,;:.!?]|\s*$))")
+        .case_insensitive(true)
+        .build()
+        .expect("valid kebab regex")
+});
+
+static CONSTANT_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:constant case|screaming snake case)\s+(?:([^,.\n]+?)\s*(?:close constant case|end constant case|end constant)\b|([A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+){0,3})(?P<punct>[,;:.!?]|\s*$))")
+        .case_insensitive(true)
+        .build()
+        .expect("valid constant regex")
+});
+
+static BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(
+        r"\b(?:backtick|code quote)\s+([^,.]+?)\s*(?:close backtick|end backtick|end code quote)\b",
+    )
+    .case_insensitive(true)
+    .build()
+    .expect("valid backtick regex")
+});
+
 static SPOKEN_REPLACEMENTS: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new(|| {
     vec![
         (spoken(r"new paragraph"), "\n\n"),
@@ -1847,6 +1970,19 @@ static SPOKEN_REPLACEMENTS: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new
         (spoken(r"(?:em dash|long dash)"), " — "),
         (spoken(r"(?:right arrow|arrow)"), " → "),
         (spoken(r"ellipsis"), "... "),
+        (spoken(r"(?:plus sign|plus symbol)"), " + "),
+        (spoken(r"(?:minus sign|minus symbol)"), " - "),
+        (spoken(r"(?:equals sign|equal sign)"), " = "),
+        (spoken(r"(?:not equal to|not equals sign)"), " != "),
+        (spoken(r"(?:percent sign|percent symbol)"), "%"),
+        (spoken(r"(?:at sign|at symbol)"), "@"),
+        (spoken(r"(?:ampersand)"), " & "),
+        (spoken(r"(?:pipe symbol|vertical bar)"), " | "),
+        (spoken(r"(?:dollar sign)"), " $"),
+        (spoken(r"(?:euro sign)"), " €"),
+        (spoken(r"(?:pound sign)"), " £"),
+        (spoken(r"(?:rupee sign)"), " ₹"),
+        (spoken(r"(?:yen sign)"), " ¥"),
     ]
 });
 
@@ -1902,6 +2038,9 @@ static SPOKEN_EMOJIS: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new(|| {
 ///   `"numbered item"`.
 pub fn apply_voice_commands(text: &str) -> String {
     let mut out = text.to_string();
+    if CLEAR_ALL_RE.is_match(&out) {
+        return String::new();
+    }
     while let Some(m) = SCRATCH_RE.find(&out) {
         let kept = drop_last_sentence(&out[..m.start()]).to_string();
         let rest = out[m.end()..].trim_start().to_string();
@@ -1928,6 +2067,20 @@ pub fn apply_voice_commands(text: &str) -> String {
 
     // In parentheses ("in parentheses beta test close parenthesis" -> "(beta test)")
     out = PAREN_RE.replace_all(&out, "($1)").into_owned();
+
+    // Developer casing commands ("camel case user id" -> "userId", "snake case created at" -> "created_at")
+    out = replace_casing(&CAMEL_RE, &out, to_camel_case);
+    out = replace_casing(&PASCAL_RE, &out, to_pascal_case);
+    out = replace_casing(&SNAKE_RE, &out, to_snake_case);
+    out = replace_casing(&KEBAB_RE, &out, to_kebab_case);
+    out = replace_casing(&CONSTANT_RE, &out, to_screaming_snake_case);
+
+    // Inline backtick code formatting ("backtick npm run dev close backtick" -> "`npm run dev`")
+    out = BACKTICK_RE
+        .replace_all(&out, |caps: &regex::Captures| {
+            format!("`{}`", caps[1].trim())
+        })
+        .into_owned();
 
     for (re, with) in SPOKEN_REPLACEMENTS.iter() {
         out = re.replace_all(&out, regex::NoExpand(with)).into_owned();
@@ -3054,6 +3207,35 @@ mod tests {
             apply_voice_commands("Note ellipsis see below"),
             "Note... see below"
         );
+    }
+
+    #[test]
+    fn developer_cases_and_symbols_expand() {
+        assert_eq!(
+            apply_voice_commands("Let's define camel case user account id end camel here"),
+            "Let's define userAccountId here"
+        );
+        assert_eq!(
+            apply_voice_commands("The column is snake case created at timestamp"),
+            "The column is created_at_timestamp"
+        );
+        assert_eq!(
+            apply_voice_commands("Set constant case max buffer size"),
+            "Set MAX_BUFFER_SIZE"
+        );
+        assert_eq!(
+            apply_voice_commands("Class pascal case audio recording manager"),
+            "Class AudioRecordingManager"
+        );
+        assert_eq!(
+            apply_voice_commands("Run backtick npm test close backtick"),
+            "Run `npm test`"
+        );
+        assert_eq!(
+            apply_voice_commands("Price is dollar sign 50 plus sign tax"),
+            "Price is $50 + tax"
+        );
+        assert_eq!(apply_voice_commands("Everything is ruined delete all"), "");
     }
 
     #[test]
