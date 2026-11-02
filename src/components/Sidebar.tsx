@@ -64,7 +64,7 @@ interface SectionConfig {
   icon: React.ComponentType<IconProps>;
   /** `null` when App renders the section itself (Debug, with its handlers). */
   component: React.ComponentType | null;
-  group: "hub" | "workspace" | "system";
+  group: "meetings" | "hub" | "workspace" | "system";
   enabled: (settings: any) => boolean;
 }
 
@@ -120,14 +120,14 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.notes",
     icon: NotebookPen,
     component: NotesPage,
-    group: "workspace",
+    group: "meetings",
     enabled: () => true,
   },
   tasks: {
     labelKey: "sidebar.tasks",
     icon: CheckSquare,
     component: TasksSection,
-    group: "workspace",
+    group: "meetings",
     enabled: () => true,
   },
   history: {
@@ -205,6 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .filter(([_, config]) => config.enabled(settings))
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
+  const meetingItems = availableSections.filter((s) => s.group === "meetings");
   const hubItems = availableSections.filter((s) => s.group === "hub");
   const workspaceItems = availableSections.filter(
     (s) => s.group === "workspace",
@@ -260,6 +261,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="space-y-1">
           <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
+            {t("sidebar.groups.meetings")}
+          </p>
+          <div className="space-y-0.5">{meetingItems.map(renderNavItem)}</div>
+        </div>
+
+        <div className="pt-2 border-t border-line space-y-1">
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
             {t("sidebar.groups.dictation")}
           </p>
           <div className="space-y-0.5">{hubItems.map(renderNavItem)}</div>
@@ -274,6 +282,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="pt-3 border-t border-line space-y-2">
+        <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
+          {t("sidebar.groups.system")}
+        </p>
         <div className="space-y-0.5">{systemItems.map(renderNavItem)}</div>
 
         {/* Quick Shortcut Badge Widget */}

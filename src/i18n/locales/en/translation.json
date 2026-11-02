@@ -27,8 +27,10 @@
     "tasks": "My Tasks",
     "pro": "Pro",
     "groups": {
-      "dictation": "Dictation & Style",
-      "workspace": "Workspace"
+      "meetings": "Meetings & Notes",
+      "dictation": "Voice Flow",
+      "workspace": "Workspace",
+      "system": "System"
     },
     "status": {
       "ready": "Ready"
@@ -1138,10 +1140,21 @@
     "summaryCopied": "Summary copied",
     "actionsCopied": "Action items copied",
     "importAudio": "Import Audio",
+    "importMedia": "Import Meeting (Video / Audio)",
     "importingAudio": "Transcribing audio recording…",
+    "importingMedia": "Transcribing meeting video/audio…",
     "importSuccess": "Meeting audio transcribed and summarized",
+    "importMediaSuccess": "Meeting transcribed & summarized with action items",
     "audioFiles": "Audio Files",
     "audioRecording": "Audio Recording",
+    "mediaFiles": "Audio & Video Recordings",
+    "videoPlayback": "Meeting Video Recording",
+    "videoFiles": "Video Files",
+    "startMeeting": "Record Meeting",
+    "sourceVideo": "Video",
+    "sourceAudio": "Audio",
+    "tabSummary": "AI Summary & Minutes",
+    "tabTranscript": "Full Transcript",
     "copied": "Note copied",
     "delete": "Delete note",
     "bodyPlaceholder": "Type, or record to add a transcript…",
@@ -1157,6 +1170,7 @@
       "all": "All",
       "pinned": "Pinned",
       "meeting": "Meetings",
+      "video": "Videos",
       "voice": "Voice",
       "text": "Text",
       "digest": "Digests"

@@ -19,14 +19,16 @@ export const SUMMARY_TEMPLATES = [
 export const NOTE_KINDS = ["text", "voice", "meeting", "digest"] as const;
 export type NoteKind = (typeof NOTE_KINDS)[number];
 
-export type NoteFilter = "all" | "pinned" | NoteKind;
+export type NoteFilter = "all" | "pinned" | "video" | NoteKind;
 
 export const matchesFilter = (note: Note, filter: NoteFilter) =>
   filter === "all"
     ? true
     : filter === "pinned"
       ? note.pinned
-      : note.kind === filter;
+      : filter === "video"
+        ? note.tags.includes("video")
+        : note.kind === filter;
 
 /** Where in a note an action item lives. */
 export type ActionField = "summary" | "body";

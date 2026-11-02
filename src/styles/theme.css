@@ -3,22 +3,22 @@
  */
 
 :root {
-  /* Light mode — Warm Sand & Ivory + Dawn Lavender + Fathom Teal */
-  --light-color-text: #1a1a1a;
-  --light-color-background: #fcfcfb;
+  /* Light mode — Warm Sand & Ivory + Dawn Iris + Fathom Teal */
+  --light-color-text: #18181b;
+  --light-color-background: #fbfbf9;
   --light-color-surface: #ffffff;
-  --light-color-sidebar: #f5f4f0;
-  --light-color-logo-primary: #8b5cf6;
-  --light-color-logo-stroke: #1a1a1a;
+  --light-color-sidebar: #f4f3ef;
+  --light-color-logo-primary: #6366f1;
+  --light-color-logo-stroke: #18181b;
   --light-color-dawn-soft: #f4e1ff;
   --light-color-fathom: #034f46;
 
-  /* Dark mode — Vast Carbon + Warm Ivory + Soft Lavender */
-  --dark-color-text: #e9e8e1;
-  --dark-color-background: #161615;
-  --dark-color-surface: #1e1e1c;
-  --dark-color-sidebar: #1b1b1a;
-  --dark-color-logo-primary: #a78bfa;
+  /* Dark mode — Luxurious Carbon Glass + Soft Iris & Lavender */
+  --dark-color-text: #f3f3ee;
+  --dark-color-background: #0d0d0f;
+  --dark-color-surface: #161618;
+  --dark-color-sidebar: #111113;
+  --dark-color-logo-primary: #818cf8;
 
   /* Status colors */
   --light-color-warning: #d97706;

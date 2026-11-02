@@ -33,6 +33,7 @@ import {
   Trash2,
   UploadCloud,
   Users,
+  Video,
   Wand2,
   X,
 } from "lucide-react";
@@ -67,6 +68,7 @@ const FILTERS: NoteFilter[] = [
   "all",
   "pinned",
   "meeting",
+  "video",
   "voice",
   "text",
   "digest",
@@ -119,6 +121,27 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   const pendingSave = useRef<{ id: number; title: string; body: string }>();
 
   const selected = notes.find((n) => n.id === selectedId) ?? null;
+  const isVideoNote = useMemo(
+    () =>
+      Boolean(
+        selected?.tags.some((t) => t === "video") ||
+          selected?.tags.some((t) =>
+            /\.(mp4|mov|mkv|webm|m4v|avi)$/i.test(t.replace(/^source:/, "")),
+          ),
+      ),
+    [selected],
+  );
+  const sourcePath = useMemo(
+    () =>
+      selected?.tags
+        .find((t) => t.startsWith("source:"))
+        ?.replace(/^source:/, "") ?? null,
+    [selected],
+  );
+  const videoSrc = useMemo(
+    () => (sourcePath ? convertFileSrc(sourcePath, "asset") : null),
+    [sourcePath],
+  );
   const noteShortcut = getSetting("bindings")?.voice_note?.current_binding;
 
   const visibleNotes = useMemo(
@@ -375,14 +398,14 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   const [importingAudio, setImportingAudio] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
-  const importAudioFile = async () => {
+  const importMediaFile = async () => {
     try {
       const picked = await open({
         multiple: false,
         directory: false,
         filters: [
           {
-            name: t("notes.audioFiles"),
+            name: t("notes.mediaFiles"),
             extensions: [
               "mp3",
               "m4a",
@@ -390,21 +413,29 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
               "wav",
               "flac",
               "aif",
+              "ogg",
               "mp4",
               "mov",
+              "mkv",
+              "webm",
+              "m4v",
+              "avi",
             ],
           },
         ],
       });
       if (!picked || typeof picked !== "string") return;
 
+      const isVideoFile = /\.(mp4|mov|mkv|webm|m4v|avi)$/i.test(picked);
       setImportingAudio(true);
       const fileName =
         picked
           .split(/[\\/]/)
           .pop()
           ?.replace(/\.[^.]+$/, "") || "Imported Meeting";
-      const toastId = toast.loading(t("notes.importingAudio"));
+      const toastId = toast.loading(
+        isVideoFile ? t("notes.importingMedia") : t("notes.importingAudio"),
+      );
 
       const res = await commands.transcribeFile(picked);
       toast.dismiss(toastId);
@@ -429,11 +460,18 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
         return;
       }
 
-      await commands.setNoteTags(noteRes.data.id, ["imported", "meeting"]);
+      const tags = ["imported", "meeting"];
+      if (isVideoFile) {
+        tags.push("video");
+        tags.push(`source:${picked}`);
+      }
+      await commands.setNoteTags(noteRes.data.id, tags);
       await load();
       setSelectedId(noteRes.data.id);
       setDraft({ title: fileName, body: transcriptText });
-      toast.success(t("notes.importSuccess"));
+      toast.success(
+        isVideoFile ? t("notes.importMediaSuccess") : t("notes.importSuccess"),
+      );
 
       // Auto-summarize the imported meeting note
       setTimeout(async () => {
@@ -445,7 +483,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
         }
       }, 200);
     } catch (err) {
-      console.error("Failed to import audio:", err);
+      console.error("Failed to import media file:", err);
       toast.error(String(err));
     } finally {
       setImportingAudio(false);
@@ -557,6 +595,24 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
             variant="secondary"
             size="sm"
             className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 shadow-2xs"
+            onClick={importMediaFile}
+            disabled={importingAudio}
+            title={t("notes.importMedia")}
+          >
+            {importingAudio ? (
+              <Loader2 size={13} className="animate-spin text-logo-primary" />
+            ) : (
+              <Video size={13} className="text-purple-400" />
+            )}
+            <span className="text-xs font-medium">
+              {importingAudio ? t("notes.importingMedia") : t("notes.importMedia")}
+            </span>
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 shadow-2xs"
             onClick={createDigest}
             disabled={digesting}
             title={t("notes.digest.hint")}
@@ -640,9 +696,9 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                 variant="secondary"
                 size="sm"
                 className="rounded-xl px-2.5 shadow-2xs"
-                onClick={importAudioFile}
+                onClick={importMediaFile}
                 disabled={importingAudio}
-                title={t("notes.importAudio")}
+                title={t("notes.importMedia")}
               >
                 {importingAudio ? (
                   <Loader2
@@ -679,7 +735,10 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                 </div>
               )}
               {visibleNotes.map((note) => {
-                const KindIcon = KIND_ICONS[note.kind] ?? FileText;
+                const isNoteVideo = note.tags.includes("video");
+                const KindIcon = isNoteVideo
+                  ? Video
+                  : KIND_ICONS[note.kind] ?? FileText;
                 const isSelected = note.id === selectedId;
                 const preview = (note.summary || note.body).trim();
 
@@ -705,9 +764,19 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                           {note.title || t("notes.untitled")}
                         </span>
                       </div>
-                      {note.pinned && (
-                        <Pin size={11} className="shrink-0 text-logo-primary" />
-                      )}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isNoteVideo && (
+                          <span className="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">
+                            {t("notes.sourceVideo")}
+                          </span>
+                        )}
+                        {note.pinned && (
+                          <Pin
+                            size={11}
+                            className="shrink-0 text-logo-primary"
+                          />
+                        )}
+                      </div>
                     </div>
 
                     {preview && (
@@ -749,6 +818,27 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   <li>• {t("notes.introFeatures.actions")}</li>
                   <li>• {t("notes.introFeatures.digest")}</li>
                 </ul>
+                <div className="pt-3 flex items-center justify-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 shadow-2xs font-medium"
+                    onClick={() => commands.toggleVoiceNote()}
+                  >
+                    <Mic size={13} />
+                    <span>{t("notes.recordMeeting")}</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 shadow-2xs font-medium"
+                    onClick={importMediaFile}
+                    disabled={importingAudio}
+                  >
+                    <Video size={13} className="text-purple-400" />
+                    <span>{t("notes.importMedia")}</span>
+                  </Button>
+                </div>
               </div>
             ) : (
               <>
@@ -830,7 +920,29 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   </Button>
                 </div>
 
-                {selected.audio_file && (
+                {isVideoNote && videoSrc && (
+                  <div className="p-3 border-b border-line bg-surface-1/40">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-ink-2 flex items-center gap-1.5">
+                        <Video size={13} className="text-logo-primary" />
+                        <span>{t("notes.videoPlayback")}</span>
+                      </span>
+                      {sourcePath && (
+                        <span className="text-[11px] font-mono text-ink-4 truncate max-w-xs">
+                          {sourcePath.split(/[\\/]/).pop()}
+                        </span>
+                      )}
+                    </div>
+                    <video
+                      controls
+                      playsInline
+                      src={videoSrc}
+                      className="w-full max-h-72 rounded-xl bg-black/90 border border-line shadow-md object-contain"
+                    />
+                  </div>
+                )}
+
+                {!isVideoNote && selected.audio_file && (
                   <div className="flex items-center gap-3 px-4 py-2 border-b border-line bg-surface-1/40">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-ink-3 shrink-0">
                       <Headphones size={13} className="text-logo-primary" />
