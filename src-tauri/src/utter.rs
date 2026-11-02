@@ -13,7 +13,7 @@ use regex::{Regex, RegexBuilder};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashSet;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -1793,6 +1793,60 @@ fn drop_last_sentence(prefix: &str) -> &str {
     }
 }
 
+static SCRATCH_RE: LazyLock<Regex> = LazyLock::new(|| {
+    spoken(
+        r"(?:scratch that|delete that|strike that|forget that|cancel that|never mind that|never mind)",
+    )
+});
+
+static BACKTRACK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?P<wrong>[A-Za-z0-9_'-]+)\s*,\s*(?:no wait|wait no|i mean|or rather)\s*,?\s*(?P<right>[A-Za-z0-9_'-]+)")
+        .case_insensitive(true)
+        .build()
+        .expect("valid backtrack regex")
+});
+
+static CAPS_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:all caps|all uppercase)\s+([A-Za-z0-9_'-]+)\b")
+        .case_insensitive(true)
+        .build()
+        .expect("valid caps regex")
+});
+
+static TAG_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:hashtag|hash tag)\s+([A-Za-z0-9_]+)\b")
+        .case_insensitive(true)
+        .build()
+        .expect("valid tag regex")
+});
+
+static QUOTE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:quote|in quotes)\s+([^,.]+?)\s*(?:unquote|end quote)\b")
+        .case_insensitive(true)
+        .build()
+        .expect("valid quote regex")
+});
+
+static PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
+    RegexBuilder::new(r"\b(?:in parentheses|in parenthesis)\s+([^,.]+?)\s*(?:close parenthesis|close parentheses)\b")
+        .case_insensitive(true)
+        .build()
+        .expect("valid paren regex")
+});
+
+static SPOKEN_REPLACEMENTS: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new(|| {
+    vec![
+        (spoken(r"new paragraph"), "\n\n"),
+        (spoken(r"(?:new line|next line)"), "\n"),
+        (spoken(r"(?:bullet point|next bullet)"), "\n- "),
+        (
+            spoken(r"(?:todo item|action item|checkbox item)"),
+            "\n- [ ] ",
+        ),
+        (spoken(r"(?:numbered item|numbered point)"), "\n1. "),
+    ]
+});
+
 /// Applies explicit spoken commands and Wispr Flow's spoken backtracking:
 /// - Whole-sentence backtrack: `"scratch that"`, `"delete that"`, `"strike that"`,
 ///   `"forget that"`, `"cancel that"`, `"never mind"` removes the preceding sentence.
@@ -1802,11 +1856,8 @@ fn drop_last_sentence(prefix: &str) -> &str {
 /// - Formatting: `"new line"`, `"new paragraph"`, `"bullet point"`, `"todo item"`,
 ///   `"numbered item"`.
 pub fn apply_voice_commands(text: &str) -> String {
-    let scratch = spoken(
-        r"(?:scratch that|delete that|strike that|forget that|cancel that|never mind that|never mind)",
-    );
     let mut out = text.to_string();
-    while let Some(m) = scratch.find(&out) {
+    while let Some(m) = SCRATCH_RE.find(&out) {
         let kept = drop_last_sentence(&out[..m.start()]).to_string();
         let rest = out[m.end()..].trim_start().to_string();
         out = match (kept.is_empty(), rest.is_empty()) {
@@ -1817,61 +1868,23 @@ pub fn apply_voice_commands(text: &str) -> String {
     }
 
     // Mid-sentence backtrack ("Let's meet on Tuesday, no wait Wednesday" -> "Let's meet on Wednesday")
-    if let Ok(backtrack_re) = RegexBuilder::new(
-        r"\b(?P<wrong>[A-Za-z0-9_'-]+)\s*,\s*(?:no wait|wait no|i mean|or rather)\s*,?\s*(?P<right>[A-Za-z0-9_'-]+)",
-    )
-    .case_insensitive(true)
-    .build()
-    {
-        out = backtrack_re.replace_all(&out, "$right").into_owned();
-    }
+    out = BACKTRACK_RE.replace_all(&out, "$right").into_owned();
 
     // All caps formatting ("all caps urgent" -> "URGENT")
-    if let Ok(caps_re) = RegexBuilder::new(r"\b(?:all caps|all uppercase)\s+([A-Za-z0-9_'-]+)\b")
-        .case_insensitive(true)
-        .build()
-    {
-        out = caps_re
-            .replace_all(&out, |caps: &regex::Captures| caps[1].to_uppercase())
-            .into_owned();
-    }
+    out = CAPS_RE
+        .replace_all(&out, |caps: &regex::Captures| caps[1].to_uppercase())
+        .into_owned();
 
     // Hashtags ("hashtag launch" -> "#launch")
-    if let Ok(tag_re) = RegexBuilder::new(r"\b(?:hashtag|hash tag)\s+([A-Za-z0-9_]+)\b")
-        .case_insensitive(true)
-        .build()
-    {
-        out = tag_re.replace_all(&out, "#$1").into_owned();
-    }
+    out = TAG_RE.replace_all(&out, "#$1").into_owned();
 
     // In quotes ("quote ship it unquote" -> "\"ship it\"")
-    if let Ok(quote_re) =
-        RegexBuilder::new(r"\b(?:quote|in quotes)\s+([^,.]+?)\s*(?:unquote|end quote)\b")
-            .case_insensitive(true)
-            .build()
-    {
-        out = quote_re.replace_all(&out, "\"$1\"").into_owned();
-    }
+    out = QUOTE_RE.replace_all(&out, "\"$1\"").into_owned();
 
     // In parentheses ("in parentheses beta test close parenthesis" -> "(beta test)")
-    if let Ok(paren_re) = RegexBuilder::new(r"\b(?:in parentheses|in parenthesis)\s+([^,.]+?)\s*(?:close parenthesis|close parentheses)\b")
-        .case_insensitive(true)
-        .build()
-    {
-        out = paren_re.replace_all(&out, "($1)").into_owned();
-    }
+    out = PAREN_RE.replace_all(&out, "($1)").into_owned();
 
-    let replacements = [
-        (spoken(r"new paragraph"), "\n\n"),
-        (spoken(r"(?:new line|next line)"), "\n"),
-        (spoken(r"(?:bullet point|next bullet)"), "\n- "),
-        (
-            spoken(r"(?:todo item|action item|checkbox item)"),
-            "\n- [ ] ",
-        ),
-        (spoken(r"(?:numbered item|numbered point)"), "\n1. "),
-    ];
-    for (re, with) in &replacements {
+    for (re, with) in SPOKEN_REPLACEMENTS.iter() {
         out = re.replace_all(&out, regex::NoExpand(with)).into_owned();
     }
     if out != text {
@@ -2072,11 +2085,13 @@ pub fn ask_notes_prompt_with_history(
     )
 }
 
+static CITED_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)\[note\s*#?(\d+)\]").expect("valid citation regex"));
+
 /// Note ids cited as `[Note N]` in an answer, in order of first mention.
 pub fn cited_note_ids(answer: &str) -> Vec<i64> {
-    let re = Regex::new(r"(?i)\[note\s*#?(\d+)\]").expect("valid citation regex");
     let mut ids = Vec::new();
-    for cap in re.captures_iter(answer) {
+    for cap in CITED_RE.captures_iter(answer) {
         if let Ok(id) = cap[1].parse::<i64>() {
             if !ids.contains(&id) {
                 ids.push(id);

@@ -22,15 +22,32 @@ import { useOsType } from "@/hooks/useOsType";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
 import {
   GeneralSettings,
-  AdvancedSettings,
-  HistorySettings,
-  AboutSettings,
   PostProcessingSettings,
   ModelsSettings,
   PersonalizeSettings,
 } from "./settings";
-import { NotesPage } from "./notes/NotesPage";
-import { StatsPage } from "./stats/StatsPage";
+
+const NotesPage = React.lazy(() =>
+  import("./notes/NotesPage").then((m) => ({ default: m.NotesPage })),
+);
+const StatsPage = React.lazy(() =>
+  import("./stats/StatsPage").then((m) => ({ default: m.StatsPage })),
+);
+const HistorySettings = React.lazy(() =>
+  import("./settings/history/HistorySettings").then((m) => ({
+    default: m.HistorySettings,
+  })),
+);
+const AdvancedSettings = React.lazy(() =>
+  import("./settings/advanced/AdvancedSettings").then((m) => ({
+    default: m.AdvancedSettings,
+  })),
+);
+const AboutSettings = React.lazy(() =>
+  import("./settings/about/AboutSettings").then((m) => ({
+    default: m.AboutSettings,
+  })),
+);
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
 

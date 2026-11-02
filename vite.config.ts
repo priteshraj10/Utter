@@ -24,7 +24,40 @@ export default defineConfig(async () => ({
         main: resolve(__dirname, "index.html"),
         overlay: resolve(__dirname, "src/overlay/index.html"),
       },
+      output: {
+        manualChunks(id) {
+          if (id.includes("/src/i18n/locales/")) {
+            return "locales-data";
+          }
+          if (id.includes("node_modules")) {
+            if (
+              id.includes("react-markdown") ||
+              id.includes("remark") ||
+              id.includes("micromark") ||
+              id.includes("unist") ||
+              id.includes("mdast") ||
+              id.includes("vfile")
+            ) {
+              return "markdown-vendor";
+            }
+            if (id.includes("lucide-react")) {
+              return "icons-vendor";
+            }
+            if (id.includes("i18next") || id.includes("react-i18next")) {
+              return "i18n-vendor";
+            }
+            if (
+              id.includes("react") ||
+              id.includes("react-dom") ||
+              id.includes("scheduler")
+            ) {
+              return "react-vendor";
+            }
+          }
+        },
+      },
     },
+    chunkSizeWarningLimit: 1000,
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

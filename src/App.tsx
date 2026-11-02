@@ -1,4 +1,5 @@
 import {
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -71,7 +72,17 @@ const renderSettingsContent = (
 
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
-  return <ActiveComponent />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="w-5 h-5 rounded-full border-2 border-logo-primary border-t-transparent animate-spin" />
+        </div>
+      }
+    >
+      <ActiveComponent />
+    </Suspense>
+  );
 };
 
 function App() {
