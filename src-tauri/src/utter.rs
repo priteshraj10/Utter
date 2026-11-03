@@ -2365,7 +2365,58 @@ fn split_sentences(text: &str) -> Vec<String> {
     sentences
 }
 
-/// Extract action item sentences.
+/// Cleans spoken speech sentences: strips verbal filler prefixes and ensures clean capitalization.
+pub fn clean_speech_sentence(s: &str) -> String {
+    let mut clean = s.trim().trim_start_matches(['-', '*', '#', ' ']).trim();
+    let filler_prefixes = [
+        "um,",
+        "um ",
+        "uh,",
+        "uh ",
+        "so basically,",
+        "so basically ",
+        "basically,",
+        "basically ",
+        "like I said,",
+        "like I said ",
+        "you know,",
+        "you know ",
+        "I mean,",
+        "I mean ",
+        "actually,",
+        "actually ",
+        "so yeah,",
+        "so yeah ",
+        "yeah,",
+        "yeah ",
+        "well,",
+        "well ",
+        "so,",
+        "so ",
+    ];
+    let mut changed = true;
+    while changed {
+        changed = false;
+        let lower = clean.to_lowercase();
+        for prefix in filler_prefixes {
+            if lower.starts_with(prefix) {
+                clean = clean[prefix.len()..].trim();
+                changed = true;
+                break;
+            }
+        }
+    }
+    if let Some(first_char) = clean.chars().next() {
+        if first_char.is_lowercase() {
+            let mut res = first_char.to_uppercase().to_string();
+            res.push_str(&clean[first_char.len_utf8()..]);
+            return res;
+        }
+    }
+    clean.to_string()
+}
+
+/// Extract action item sentences with clean speech sanitization.
 fn extract_action_items(sentences: &[String]) -> Vec<String> {
     let markers = [
         "need to",
@@ -2400,16 +2451,16 @@ fn extract_action_items(sentences: &[String]) -> Vec<String> {
     for s in sentences {
         let lower = s.to_lowercase();
         if markers.iter().any(|m| lower.contains(m)) {
-            let clean = s.trim().trim_start_matches(['-', '*', '#', ' ']).trim();
-            if !clean.is_empty() && !items.contains(&clean.to_string()) {
-                items.push(clean.to_string());
+            let clean = clean_speech_sentence(s);
+            if !clean.is_empty() && !items.contains(&clean) {
+                items.push(clean);
             }
         }
     }
     items
 }
 
-/// Extract decision sentences.
+/// Extract decision sentences with clean speech sanitization.
 fn extract_decisions(sentences: &[String]) -> Vec<String> {
     let markers = [
         "decided",
@@ -2423,14 +2474,16 @@ fn extract_decisions(sentences: &[String]) -> Vec<String> {
         "finalized",
         "resolved",
         "the decision is",
+        "consensus is",
+        "moving forward with",
     ];
     let mut items = Vec::new();
     for s in sentences {
         let lower = s.to_lowercase();
         if markers.iter().any(|m| lower.contains(m)) {
-            let clean = s.trim().trim_start_matches(['-', '*', '#', ' ']).trim();
-            if !clean.is_empty() && !items.contains(&clean.to_string()) {
-                items.push(clean.to_string());
+            let clean = clean_speech_sentence(s);
+            if !clean.is_empty() && !items.contains(&clean) {
+                items.push(clean);
             }
         }
     }
@@ -2491,7 +2544,7 @@ pub fn local_summarize_note(body: &str, template: &str) -> String {
             out.push_str("\n\n## Key discussion points\n");
             if !key_points.is_empty() {
                 for p in &key_points {
-                    out.push_str(&format!("- {}\n", p.trim()));
+                    out.push_str(&format!("- {}\n", clean_speech_sentence(p)));
                 }
             } else {
                 out.push_str("- Meeting discussion took place as transcribed.\n");
@@ -2513,7 +2566,7 @@ pub fn local_summarize_note(body: &str, template: &str) -> String {
             if !questions.is_empty() {
                 out.push_str("\n## Open questions\n");
                 for q in &questions {
-                    out.push_str(&format!("- {}\n", q));
+                    out.push_str(&format!("- {}\n", clean_speech_sentence(q)));
                 }
             }
             out.trim().to_string()
@@ -2701,7 +2754,7 @@ pub fn local_summarize_note(body: &str, template: &str) -> String {
             out.push_str(&overview);
             out.push_str("\n\n## Key Points\n");
             for p in &key_points {
-                out.push_str(&format!("- {}\n", p.trim()));
+                out.push_str(&format!("- {}\n", clean_speech_sentence(p)));
             }
             if !decisions.is_empty() {
                 out.push_str("\n## Decisions\n");
@@ -2724,7 +2777,8 @@ pub fn local_summarize_note(body: &str, template: &str) -> String {
 pub fn local_note_title(body: &str) -> String {
     let sentences = split_sentences(body);
     let first = sentences.first().map(String::as_str).unwrap_or(body);
-    let words: Vec<&str> = first
+    let cleaned = clean_speech_sentence(first);
+    let words: Vec<&str> = cleaned
         .split_whitespace()
         .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()))
         .filter(|w| !w.is_empty() && !STOP_WORDS.contains(&w.to_lowercase().as_str()))
@@ -2739,6 +2793,258 @@ pub fn local_note_title(body: &str) -> String {
         t
     } else {
         note_title(body)
+    }
+}
+
+/// Classification of a recording: whether it should be automatically saved as a note/meeting,
+/// what kind of note it is, which summary template suits it best, suggested tags, and clean title.
+#[derive(Clone, Debug, PartialEq)]
+pub struct NoteClassification {
+    pub should_save_note: bool,
+    pub kind: String,
+    pub template: String,
+    pub tags: Vec<String>,
+    pub title: String,
+}
+
+/// Generates a clean, intelligent title for a note or meeting.
+pub fn smart_note_title(text: &str) -> String {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return "Untitled Note".to_string();
+    }
+
+    let triggers = [
+        "note to self:",
+        "note to self",
+        "take a note:",
+        "take a note",
+        "make a note:",
+        "make a note",
+        "quick note:",
+        "quick note",
+        "meeting notes:",
+        "meeting notes",
+        "standup notes:",
+        "standup notes",
+        "action items:",
+        "action items",
+        "todo list:",
+        "todo list",
+    ];
+    let lower = trimmed.to_lowercase();
+    for trig in triggers {
+        if lower.starts_with(trig) {
+            let rest = trimmed[trig.len()..]
+                .trim()
+                .trim_start_matches([':', ',', '-'])
+                .trim();
+            if !rest.is_empty() {
+                let clean = clean_speech_sentence(rest);
+                let words: Vec<&str> = clean.split_whitespace().take(7).collect();
+                if !words.is_empty() {
+                    return words.join(" ");
+                }
+            }
+        }
+    }
+
+    // Check if starts with "Meeting with X" or "Sync with X"
+    if lower.starts_with("meeting with")
+        || lower.starts_with("sync with")
+        || lower.starts_with("call with")
+    {
+        let first_sentence = split_sentences(trimmed)
+            .into_iter()
+            .next()
+            .unwrap_or_default();
+        let clean = clean_speech_sentence(&first_sentence);
+        let words: Vec<&str> = clean.split_whitespace().take(8).collect();
+        if !words.is_empty() {
+            return words.join(" ");
+        }
+    }
+
+    local_note_title(trimmed)
+}
+
+/// Automatically classifies a recording to determine if it's a meeting or voice note,
+/// which template (e.g. meeting, standup, 1:1, action_items, brainstorm) fits it,
+/// and extracts meaningful tags and a clean title.
+pub fn classify_recording(
+    text: &str,
+    audio_seconds: f64,
+    screen_ctx: Option<&ScreenContext>,
+) -> NoteClassification {
+    let trimmed = text.trim();
+    let word_count = trimmed.split_whitespace().count();
+    let lower = trimmed.to_lowercase();
+
+    // 1. Detect if active app is a meeting platform
+    let mut is_meeting_app = false;
+    let mut app_tag = None;
+
+    if let Some(ctx) = screen_ctx {
+        let app_lower = ctx.app_name.to_lowercase();
+        let bundle_lower = ctx.bundle_id.as_deref().unwrap_or("").to_lowercase();
+        let title_lower = ctx.window_title.as_deref().unwrap_or("").to_lowercase();
+        let url_lower = ctx.document_url.as_deref().unwrap_or("").to_lowercase();
+
+        if bundle_lower.contains("zoom")
+            || app_lower.contains("zoom")
+            || title_lower.contains("zoom meeting")
+        {
+            is_meeting_app = true;
+            app_tag = Some("Zoom".to_string());
+        } else if bundle_lower.contains("teams")
+            || app_lower.contains("teams")
+            || title_lower.contains("teams")
+        {
+            is_meeting_app = true;
+            app_tag = Some("Teams".to_string());
+        } else if title_lower.contains("meet - ")
+            || url_lower.contains("meet.google.com")
+            || title_lower.contains("google meet")
+        {
+            is_meeting_app = true;
+            app_tag = Some("Google Meet".to_string());
+        } else if bundle_lower.contains("webex") || app_lower.contains("webex") {
+            is_meeting_app = true;
+            app_tag = Some("Webex".to_string());
+        } else if bundle_lower.contains("facetime") || app_lower.contains("facetime") {
+            is_meeting_app = true;
+            app_tag = Some("FaceTime".to_string());
+        } else if app_lower.contains("slack")
+            && (title_lower.contains("huddle") || title_lower.contains("call"))
+        {
+            is_meeting_app = true;
+            app_tag = Some("Slack Huddle".to_string());
+        } else if bundle_lower.contains("notes")
+            || app_lower.contains("notion")
+            || bundle_lower.contains("obsidian")
+            || app_lower.contains("bear")
+            || title_lower.contains("google docs")
+            || url_lower.contains("docs.google.com")
+        {
+            app_tag = Some(if app_lower.contains("notion") {
+                "Notion".to_string()
+            } else if bundle_lower.contains("obsidian") {
+                "Obsidian".to_string()
+            } else if app_lower.contains("bear") {
+                "Bear".to_string()
+            } else if title_lower.contains("google docs") {
+                "Google Docs".to_string()
+            } else {
+                "Notes".to_string()
+            });
+        }
+    }
+
+    // 2. Detect explicit spoken keywords and templates
+    let has_standup = lower.contains("standup")
+        || (lower.contains("yesterday") && (lower.contains("today") || lower.contains("blocker")));
+    let has_1on1 = lower.contains("1:1")
+        || lower.contains("1 on 1")
+        || lower.contains("one on one")
+        || lower.contains("1-on-1");
+    let has_action_items = lower.contains("action items")
+        || lower.contains("todo list")
+        || lower.contains("tasks for today");
+    let has_brainstorm =
+        lower.contains("brainstorm") || lower.contains("ideas for") || lower.contains("what if we");
+    let has_interview = lower.contains("interview with")
+        || lower.contains("candidate interview")
+        || lower.contains("feedback on candidate");
+    let has_lecture =
+        lower.contains("lecture") || lower.contains("class notes") || lower.contains("professor");
+    let has_explicit_note = lower.starts_with("note to self")
+        || lower.starts_with("take a note")
+        || lower.starts_with("make a note")
+        || lower.starts_with("quick note")
+        || lower.starts_with("remember to");
+    let has_meeting_mention = lower.contains("meeting with")
+        || lower.contains("sync with")
+        || lower.contains("agenda for")
+        || lower.contains("discussed in the call")
+        || lower.contains("recap of the call");
+
+    // 3. Determine if this should be saved as a note/meeting
+    let should_save_note = is_meeting_app
+        || has_standup
+        || has_1on1
+        || has_action_items
+        || has_brainstorm
+        || has_interview
+        || has_lecture
+        || has_explicit_note
+        || has_meeting_mention
+        || audio_seconds >= 20.0
+        || word_count >= 35;
+
+    // 4. Select the best template, kind, and tags
+    let mut tags = Vec::new();
+    if let Some(t) = app_tag {
+        tags.push(t);
+    }
+
+    let (kind, template) = if has_standup {
+        tags.push("standup".to_string());
+        (
+            crate::managers::notes::kind::MEETING.to_string(),
+            "standup".to_string(),
+        )
+    } else if has_1on1 {
+        tags.push("1-on-1".to_string());
+        (
+            crate::managers::notes::kind::MEETING.to_string(),
+            "one_on_one".to_string(),
+        )
+    } else if has_action_items {
+        tags.push("action-items".to_string());
+        (
+            crate::managers::notes::kind::VOICE.to_string(),
+            "action_items".to_string(),
+        )
+    } else if has_brainstorm {
+        tags.push("brainstorm".to_string());
+        (
+            crate::managers::notes::kind::VOICE.to_string(),
+            "brainstorm".to_string(),
+        )
+    } else if has_interview {
+        tags.push("interview".to_string());
+        (
+            crate::managers::notes::kind::MEETING.to_string(),
+            "interview".to_string(),
+        )
+    } else if has_lecture {
+        tags.push("lecture".to_string());
+        (
+            crate::managers::notes::kind::MEETING.to_string(),
+            "lecture".to_string(),
+        )
+    } else if is_meeting_app || has_meeting_mention || audio_seconds >= 40.0 || word_count >= 60 {
+        tags.push("meeting".to_string());
+        (
+            crate::managers::notes::kind::MEETING.to_string(),
+            "meeting".to_string(),
+        )
+    } else {
+        tags.push("voice-note".to_string());
+        (
+            crate::managers::notes::kind::VOICE.to_string(),
+            "auto".to_string(),
+        )
+    };
+
+    let title = smart_note_title(trimmed);
+
+    NoteClassification {
+        should_save_note,
+        kind,
+        template,
+        tags,
+        title,
     }
 }
 
@@ -3538,5 +3844,41 @@ mod tests {
         assert!(digest.contains("## Overview"));
         assert!(digest.contains("## What I worked on"));
         assert!(digest.contains("## Action items"));
+    }
+
+    #[test]
+    fn test_classify_recording_and_smart_titles() {
+        let c1 = classify_recording(
+            "Note to self: remember to buy fresh coffee beans",
+            5.0,
+            None,
+        );
+        assert!(c1.should_save_note);
+        assert_eq!(c1.template, "auto");
+        assert_eq!(c1.title, "Remember to buy fresh coffee beans");
+
+        let c2 = classify_recording(
+            "Yesterday I finished the audio recording pipeline. Today I am working on meeting auto detection. No blockers.",
+            15.0,
+            None,
+        );
+        assert!(c2.should_save_note);
+        assert_eq!(c2.template, "standup");
+        assert!(c2.tags.contains(&"standup".to_string()));
+
+        let zoom_ctx = ScreenContext {
+            app_name: "zoom.us".to_string(),
+            bundle_id: Some("us.zoom.xos".to_string()),
+            window_title: Some("Team Sprint Planning - Zoom Meeting".to_string()),
+            ..Default::default()
+        };
+        let c3 = classify_recording(
+            "Let's review the quarterly metrics and plan the sprint goals.",
+            8.0,
+            Some(&zoom_ctx),
+        );
+        assert!(c3.should_save_note);
+        assert_eq!(c3.template, "meeting");
+        assert!(c3.tags.contains(&"Zoom".to_string()));
     }
 }

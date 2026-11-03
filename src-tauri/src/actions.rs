@@ -15,7 +15,7 @@ use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
 use crate::TranscriptionCoordinator;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -137,13 +137,15 @@ struct TranscribeAction {
     mode: DictationMode,
 }
 
-/// Recordings at least this long are summarized automatically when saved as
-/// notes, since they are likely meetings rather than quick thoughts.
-const AUTO_SUMMARY_MIN_SECONDS: f64 = 60.0;
-
-/// Saves a voice note and summarizes it in the background as meeting/voice notes.
-fn save_voice_note(app: &AppHandle, text: &str, audio_file: Option<String>, audio_seconds: f64) {
-    use crate::managers::notes::kind;
+/// Saves a voice note or meeting and summarizes it in the background with auto-detected classification.
+fn save_voice_note(
+    app: &AppHandle,
+    text: &str,
+    audio_file: Option<String>,
+    audio_seconds: f64,
+    forced_template: Option<String>,
+    custom_tags: Option<Vec<String>>,
+) {
     let notes = app.state::<Arc<crate::managers::notes::NotesManager>>();
     let settings = get_settings(app);
     let text = if settings.voice_commands {
@@ -151,17 +153,18 @@ fn save_voice_note(app: &AppHandle, text: &str, audio_file: Option<String>, audi
     } else {
         text.to_string()
     };
-    let note_kind = if audio_seconds >= AUTO_SUMMARY_MIN_SECONDS {
-        kind::MEETING
-    } else {
-        kind::VOICE
-    };
+
+    let screen_ctx = crate::utter::dictation_screen_context();
+    let classification =
+        crate::utter::classify_recording(&text, audio_seconds, screen_ctx.as_ref());
+
+    let template = forced_template.unwrap_or(classification.template);
     let note = match notes.create(
-        &crate::utter::note_title(&text),
+        &classification.title,
         &text,
         audio_file,
         audio_seconds,
-        note_kind,
+        &classification.kind,
     ) {
         Ok(note) => note,
         Err(e) => {
@@ -173,12 +176,19 @@ fn save_voice_note(app: &AppHandle, text: &str, audio_file: Option<String>, audi
             return;
         }
     };
+
+    let tags = custom_tags.unwrap_or(classification.tags);
+    if !tags.is_empty() {
+        let _ = notes.set_tags(note.id, &tags);
+    }
+
     // Automatically generate rich structured summaries for notes with content
     let word_count = text.split_whitespace().count();
     if word_count >= 5 {
         let app = app.clone();
+        let template_clone = template.clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(e) = summarize_note(&app, note.id, None).await {
+            if let Err(e) = summarize_note(&app, note.id, Some(template_clone)).await {
                 warn!("Automatic note summary failed: {e}");
             }
         });
@@ -242,7 +252,7 @@ pub(crate) async fn summarize_note(
         {
             Some(t)
         } else {
-            Some(crate::utter::local_note_title(&note.body))
+            Some(crate::utter::smart_note_title(&note.body))
         };
         if let Some(title) = title {
             let still_auto = notes
@@ -1037,9 +1047,7 @@ impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
-        if self.mode != DictationMode::Note {
-            crate::utter::remember_dictation_app();
-        }
+        crate::utter::remember_dictation_app();
 
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
@@ -1385,6 +1393,8 @@ impl ShortcutAction for TranscribeAction {
                                         transcription.trim(),
                                         wav_saved.then(|| file_name.clone()),
                                         audio_seconds,
+                                        None,
+                                        None,
                                     );
                                     let _ = hm.record_usage(
                                         &transcription,
@@ -1479,16 +1489,32 @@ impl ShortcutAction for TranscribeAction {
                             }
 
                             // Automatic meeting recording and notetaking:
-                            // If a recording is 30s or longer, automatically generate meeting notes,
-                            // structured summary, decisions, and action items in the background.
-                            if audio_seconds >= AUTO_SUMMARY_MIN_SECONDS
+                            // Check whether the recording is a meeting, voice note, standup,
+                            // or action item list, via speech content, active meeting app, or duration.
+                            let screen_ctx = crate::utter::dictation_screen_context();
+                            let classification = crate::utter::classify_recording(
+                                transcription.trim(),
+                                audio_seconds,
+                                screen_ctx.as_ref(),
+                            );
+
+                            if classification.should_save_note
                                 && !is_blank_transcription(&transcription)
                             {
+                                info!(
+                                    "Auto-detected note/meeting: kind={}, template={}, tags={:?}, title='{}'",
+                                    classification.kind,
+                                    classification.template,
+                                    classification.tags,
+                                    classification.title
+                                );
                                 save_voice_note(
                                     &ah,
                                     transcription.trim(),
                                     wav_saved.then(|| file_name.clone()),
                                     audio_seconds,
+                                    Some(classification.template),
+                                    Some(classification.tags),
                                 );
                             }
 
