@@ -1136,6 +1136,7 @@
     "copySummaryOnly": "Copy Summary Only",
     "copyActionItemsOnly": "Copy Action Items Only",
     "exportMarkdownFile": "Save as .md File",
+    "printNote": "Print / Export to PDF",
     "noteExported": "Note exported successfully",
     "summaryCopied": "Summary copied",
     "actionsCopied": "Action items copied",

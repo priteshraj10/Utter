@@ -12,7 +12,6 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { readFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import {
   CalendarDays,
-  CheckSquare,
   ChevronDown,
   Copy,
   FileDown,
@@ -26,6 +25,7 @@ import {
   Pin,
   PinOff,
   Plus,
+  Printer,
   Search,
   Sparkles,
   Square,
@@ -50,6 +50,19 @@ import { copyToClipboard } from "../settings/history/clipboard";
 import { AskNotesPanel } from "./AskNotesPanel";
 import { ActionItemsPanel } from "./ActionItemsPanel";
 import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Card,
+  Badge,
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui";
+import {
   SUMMARY_TEMPLATES,
   formatDuration,
   matchesFilter,
@@ -63,6 +76,7 @@ import {
 const NOTES_CHANGED_EVENT = "notes-changed";
 
 type Tab = "notes" | "ask" | "actions";
+type ViewMode = "both" | "summary" | "transcript";
 
 const FILTERS: NoteFilter[] = [
   "all",
@@ -117,6 +131,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   const [digesting, setDigesting] = useState(false);
   const [template, setTemplate] = useState<string>("auto");
   const [tagInput, setTagInput] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("both");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSave = useRef<{ id: number; title: string; body: string }>();
 
@@ -226,7 +241,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     };
   }, []);
 
-  // When recording is active, stream live words directly into the active note editor!
+  // When recording is active, stream live words directly into the active note editor
   useEffect(() => {
     const unlisten = events.streamTextEvent.listen((event) => {
       if (!recording) return;
@@ -244,23 +259,21 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     };
   }, [recording]);
 
-  // Tick the recording timer.
+  // Tick the recording timer
   useEffect(() => {
     if (!recording) return;
     const timer = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(timer);
   }, [recording]);
 
-  // Load the selected note into the editor; also when coming back from another
-  // tab, where action items may have edited it.
+  // Load the selected note into the editor
   useEffect(() => {
     setDraft(selected ? { title: selected.title, body: selected.body } : null);
     setTemplate(selected?.summary_template ?? defaultTemplate(selected));
     setTagInput("");
-    // Only when switching notes or tabs: edits must not be overwritten by refreshes.
   }, [selectedId, tab]);
 
-  // An AI title arrives after the summary; show it unless the user is typing.
+  // An AI title arrives after the summary; show it unless the user is typing
   useEffect(() => {
     if (!selected || !draft || pendingSave.current) return;
     if (selected.title !== draft.title && draft.title === "") {
@@ -297,7 +310,6 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
 
   const createNote = async () => {
     await flushSave();
-    // An empty title lets the first AI summary name the note.
     const result = await commands.createNote("", "");
     if (result.status === "ok") {
       setTab("notes");
@@ -323,7 +335,6 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     if (result.status === "error") {
       toast.error(result.error);
     } else {
-      // Pick up the AI title, if one was written.
       const fresh = await commands.listNotes(null);
       if (fresh.status === "ok") {
         setNotes(fresh.data);
@@ -396,7 +407,6 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   };
 
   const [importingAudio, setImportingAudio] = useState(false);
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   const importMediaFile = async () => {
     try {
@@ -473,7 +483,6 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
         isVideoFile ? t("notes.importMediaSuccess") : t("notes.importSuccess"),
       );
 
-      // Auto-summarize the imported meeting note
       setTimeout(async () => {
         setSummarizing(true);
         const sumRes = await commands.summarizeNote(noteRes.data.id, "meeting");
@@ -504,7 +513,6 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     if (!selected?.summary) return;
     if (await copyToClipboard(selected.summary)) {
       toast.success(t("notes.summaryCopied"));
-      setExportMenuOpen(false);
     }
   };
 
@@ -520,7 +528,6 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
       .join("\n");
     if (await copyToClipboard(text)) {
       toast.success(t("notes.actionsCopied"));
-      setExportMenuOpen(false);
     }
   };
 
@@ -540,10 +547,54 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
       });
       await writeTextFile(path, markdown);
       toast.success(t("notes.noteExported"));
-      setExportMenuOpen(false);
     } catch (err) {
       console.error("Failed to export markdown file:", err);
       toast.error(String(err));
+    }
+  };
+
+  const printNote = () => {
+    if (!draft || !selected) return;
+    const printWindow = window.open("", "_blank");
+    const title = draft.title || t("notes.untitled");
+    const summaryHtml = selected.summary
+      ? `<div style="margin-bottom:24px;"><h2>${t("notes.tabSummary")}</h2><div>${selected.summary.replace(/\n/g, "<br/>")}</div></div>`
+      : "";
+    const bodyHtml = draft.body
+      ? `<div style="margin-bottom:24px;"><h2>${t("notes.tabTranscript")}</h2><div>${draft.body.replace(/\n/g, "<br/>")}</div></div>`
+      : "";
+
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #111; line-height: 1.6; }
+              h1 { font-size: 24px; border-bottom: 2px solid #eaeaea; padding-bottom: 10px; margin-bottom: 16px; }
+              h2 { font-size: 16px; margin-top: 20px; color: #333; }
+              .meta { font-size: 12px; color: #666; margin-bottom: 20px; }
+              .tag { display: inline-block; background: #f0f0f0; border-radius: 4px; padding: 2px 8px; margin-right: 6px; }
+            </style>
+          </head>
+          <body>
+            <h1>${title}</h1>
+            <div class="meta">
+              ${selected.tags.map((tg) => `<span class="tag">#${tg}</span>`).join(" ")}
+              <span>${formatDateTime(String(selected.updated_at), i18n.language)}</span>
+            </div>
+            ${summaryHtml}
+            ${bodyHtml}
+            <script>
+              window.onload = function() { window.print(); window.close(); };
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    } else {
+      window.print();
     }
   };
 
@@ -551,44 +602,50 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
 
   return (
     <div className="max-w-6xl w-full mx-auto flex flex-col gap-3 h-[calc(100vh-2rem)] min-h-[460px]">
-      {/* Top bar: tabs, recording and digest */}
+      {/* Top bar: shadcn Tabs, recording and media controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-1">
-        <div className="flex items-center gap-1 rounded-xl border border-line bg-surface/70 p-1 shadow-2xs backdrop-blur-md">
-          {(
-            [
-              ["notes", NotebookPen, t("notes.tabs.notes")],
-              ["ask", MessageCircleQuestion, t("notes.tabs.ask")],
-              [
-                "actions",
-                CheckSquare,
-                openActionCount > 0
-                  ? `${t("notes.tabs.actions")} (${openActionCount})`
-                  : t("notes.tabs.actions"),
-              ],
-            ] as const
-          ).map(([id, Icon, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={async () => {
-                await flushSave();
-                if (id === "notes") await load();
-                setTab(id);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                tab === id
-                  ? "bg-surface text-text shadow-2xs border border-line ring-1 ring-logo-primary/20"
-                  : "text-ink-3 hover:text-text hover:bg-surface/50 border border-transparent"
-              }`}
-            >
-              <Icon
+        <Tabs
+          value={tab}
+          onValueChange={(val) => {
+            void flushSave();
+            if (val === "notes") void load();
+            setTab(val as Tab);
+          }}
+        >
+          <TabsList className="bg-surface/80 shadow-2xs">
+            <TabsTrigger value="notes" className="gap-2">
+              <NotebookPen
                 size={14}
-                className={tab === id ? "text-logo-primary" : "text-ink-3"}
+                className={tab === "notes" ? "text-logo-primary" : "text-ink-3"}
               />
-              {label}
-            </button>
-          ))}
-        </div>
+              <span>{t("notes.tabs.notes")}</span>
+              <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                {notes.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="ask" className="gap-2">
+              <MessageCircleQuestion
+                size={14}
+                className={tab === "ask" ? "text-logo-primary" : "text-ink-3"}
+              />
+              <span>{t("notes.tabs.ask")}</span>
+            </TabsTrigger>
+            <TabsTrigger value="actions" className="gap-2">
+              <ListTodo
+                size={14}
+                className={
+                  tab === "actions" ? "text-logo-primary" : "text-ink-3"
+                }
+              />
+              <span>{t("notes.tabs.actions")}</span>
+              {openActionCount > 0 && (
+                <Badge variant="brand" className="px-1.5 py-0 text-[10px]">
+                  {openActionCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <div className="flex items-center gap-2">
           <Button
@@ -672,7 +729,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
 
       {tab === "notes" && (
         <div className="flex-1 min-h-0 flex gap-4">
-          {/* Sidebar */}
+          {/* Notes Sidebar List */}
           <div className="w-72 shrink-0 flex flex-col gap-2">
             <div className="flex gap-2">
               <label className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl border border-line bg-surface/80 focus-within:border-logo-primary focus-within:ring-1 focus-within:ring-logo-primary/20 shadow-2xs">
@@ -684,6 +741,15 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   placeholder={t("notes.searchPlaceholder")}
                   className="w-full bg-transparent text-xs outline-none"
                 />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    className="text-ink-3 hover:text-text cursor-pointer"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
               </label>
               <Button
                 variant="secondary"
@@ -712,22 +778,30 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                 )}
               </Button>
             </div>
+
+            {/* Filter chips with shadcn Badge styling */}
             <div className="flex flex-wrap gap-1">
-              {FILTERS.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setFilter(f)}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border cursor-pointer transition-all ${
-                    filter === f
-                      ? "border-logo-primary bg-logo-primary/15 text-logo-primary shadow-2xs"
-                      : "border-line bg-surface/60 text-ink-3 hover:border-line hover:text-text"
-                  }`}
-                >
-                  {t(`notes.filters.${f}`)}
-                </button>
-              ))}
+              {FILTERS.map((f) => {
+                const isActive = filter === f;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setFilter(f)}
+                    className="cursor-pointer"
+                  >
+                    <Badge
+                      variant={isActive ? "brand" : "outline"}
+                      className="text-[11px] px-2.5 py-0.5 transition-all"
+                    >
+                      {t(`notes.filters.${f}`)}
+                    </Badge>
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Note Cards List */}
             <div className="flex-1 overflow-y-auto space-y-1.5 p-1 rounded-2xl border border-line bg-surface/40">
               {visibleNotes.length === 0 && (
                 <div className="p-6 text-center text-xs text-ink-3">
@@ -745,13 +819,13 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                 const preview = (note.summary || note.body).trim();
 
                 return (
-                  <button
+                  <Card
                     key={note.id}
                     onClick={() => select(note.id)}
-                    className={`w-full text-left p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${
+                    className={`w-full text-left p-3 cursor-pointer transition-all space-y-1.5 rounded-xl border ${
                       isSelected
                         ? "bg-surface border-line shadow-2xs ring-1 ring-logo-primary/25"
-                        : "bg-surface/50 border-transparent hover:bg-surface hover:border-line/70"
+                        : "bg-surface/50 border-transparent hover:bg-surface hover:border-line"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1.5">
@@ -768,9 +842,12 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         {isNoteVideo && (
-                          <span className="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] px-1 py-0 uppercase"
+                          >
                             {t("notes.sourceVideo")}
-                          </span>
+                          </Badge>
                         )}
                         {note.pinned && (
                           <Pin
@@ -792,17 +869,22 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                         {formatDateTime(String(note.updated_at), i18n.language)}
                       </span>
                       {note.audio_seconds > 0 && (
-                        <span>{formatDuration(note.audio_seconds)}</span>
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1 py-0"
+                        >
+                          {formatDuration(note.audio_seconds)}
+                        </Badge>
                       )}
                     </div>
-                  </button>
+                  </Card>
                 );
               })}
             </div>
           </div>
 
-          {/* Editor */}
-          <div className="flex-1 min-w-0 flex flex-col rounded-2xl border border-line bg-surface/80 shadow-2xs overflow-hidden">
+          {/* Active Note Editor & Minutes Workspace */}
+          <Card className="flex-1 min-w-0 flex flex-col rounded-2xl border border-line bg-surface/80 shadow-2xs overflow-hidden">
             {!selected || !draft ? (
               <div className="m-auto max-w-md text-center space-y-3 p-6">
                 <Mic size={28} className="mx-auto text-logo-primary" />
@@ -844,13 +926,52 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-line">
+                {/* Note Header & Action Controls */}
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-line bg-surface/60">
                   <input
                     value={draft.title}
                     onChange={(e) => edit({ title: e.target.value })}
                     className="flex-1 min-w-0 bg-transparent text-base font-semibold outline-none"
                     placeholder={t("notes.untitled")}
                   />
+
+                  {/* View Mode Segmented Controls */}
+                  <div className="inline-flex rounded-lg border border-line bg-sidebar p-0.5 text-xs text-ink-3">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("both")}
+                      className={`px-2 py-0.5 rounded-md cursor-pointer transition-colors ${
+                        viewMode === "both"
+                          ? "bg-surface text-text shadow-2xs font-medium"
+                          : "hover:text-text"
+                      }`}
+                    >
+                      {t("common.all", { defaultValue: "Both" })}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("summary")}
+                      className={`px-2 py-0.5 rounded-md cursor-pointer transition-colors ${
+                        viewMode === "summary"
+                          ? "bg-surface text-text shadow-2xs font-medium"
+                          : "hover:text-text"
+                      }`}
+                    >
+                      {t("notes.tabSummary")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("transcript")}
+                      className={`px-2 py-0.5 rounded-md cursor-pointer transition-colors ${
+                        viewMode === "transcript"
+                          ? "bg-surface text-text shadow-2xs font-medium"
+                          : "hover:text-text"
+                      }`}
+                    >
+                      {t("notes.tabTranscript")}
+                    </button>
+                  </div>
+
                   <Button
                     variant="secondary"
                     size="sm"
@@ -859,59 +980,48 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   >
                     {selected.pinned ? <PinOff size={14} /> : <Pin size={14} />}
                   </Button>
-                  <div className="relative">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                      className="flex items-center gap-1"
-                      title={t("notes.export")}
-                    >
-                      <Copy size={14} />
-                      <ChevronDown size={11} className="text-ink-3" />
-                    </Button>
-                    {exportMenuOpen && (
-                      <div className="absolute right-0 top-full mt-1 w-52 rounded-xl border border-line bg-surface/95 backdrop-blur-xl shadow-lg p-1.5 z-50 space-y-0.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void copyNote();
-                            setExportMenuOpen(false);
-                          }}
-                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 transition-colors text-left cursor-pointer"
-                        >
-                          <FileText size={13} className="text-logo-primary" />
-                          <span>{t("notes.copyFullMarkdown")}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void copySummaryOnly()}
-                          disabled={!selected.summary}
-                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 disabled:opacity-40 transition-colors text-left cursor-pointer"
-                        >
-                          <Sparkles size={13} className="text-purple-400" />
-                          <span>{t("notes.copySummaryOnly")}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void copyActionItemsOnly()}
-                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 transition-colors text-left cursor-pointer"
-                        >
-                          <ListTodo size={13} className="text-emerald-400" />
-                          <span>{t("notes.copyActionItemsOnly")}</span>
-                        </button>
-                        <div className="border-t border-line/50 my-1" />
-                        <button
-                          type="button"
-                          onClick={() => void exportMarkdownFile()}
-                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-ink hover:bg-line/40 transition-colors text-left cursor-pointer"
-                        >
-                          <FileDown size={13} className="text-cyan-400" />
-                          <span>{t("notes.exportMarkdownFile")}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+
+                  {/* shadcn DropdownMenu for Export & Copy */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        title={t("notes.export")}
+                      >
+                        <Copy size={14} />
+                        <ChevronDown size={11} className="text-ink-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={copyNote}>
+                        <FileText size={13} className="text-logo-primary" />
+                        <span>{t("notes.copyFullMarkdown")}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={copySummaryOnly}
+                        disabled={!selected.summary}
+                      >
+                        <Sparkles size={13} className="text-purple-400" />
+                        <span>{t("notes.copySummaryOnly")}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={copyActionItemsOnly}>
+                        <ListTodo size={13} className="text-emerald-400" />
+                        <span>{t("notes.copyActionItemsOnly")}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={exportMarkdownFile}>
+                        <FileDown size={13} className="text-cyan-400" />
+                        <span>{t("notes.exportMarkdownFile")}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={printNote}>
+                        <Printer size={13} className="text-amber-500" />
+                        <span>{t("notes.printNote")}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   <Button
                     variant="warning"
                     size="sm"
@@ -965,13 +1075,13 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   </div>
                 )}
 
-                {/* Summary controls */}
+                {/* Summary & Template Controls */}
                 <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-line">
                   <Sparkles size={13} className="text-logo-primary" />
                   <select
                     value={template}
                     onChange={(e) => setTemplate(e.target.value)}
-                    className="px-2 py-1 rounded-md border border-line bg-background text-xs outline-none focus:border-logo-primary cursor-pointer"
+                    className="px-2 py-1 rounded-lg border border-line bg-surface text-xs outline-none focus:border-logo-primary cursor-pointer"
                     title={t("notes.templates.label")}
                   >
                     {SUMMARY_TEMPLATES.map((id) => (
@@ -1000,9 +1110,10 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   <div className="flex flex-wrap items-center gap-1">
                     <Tag size={12} className="text-ink-3" />
                     {selected.tags.map((tag) => (
-                      <span
+                      <Badge
                         key={tag}
-                        className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] bg-logo-primary/15"
+                        variant="secondary"
+                        className="text-[11px] px-2 py-0.5 gap-1"
                       >
                         #{tag}
                         <button
@@ -1013,7 +1124,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                         >
                           <X size={10} />
                         </button>
-                      </span>
+                      </Badge>
                     ))}
                     <input
                       value={tagInput}
@@ -1031,6 +1142,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   </div>
                 </div>
 
+                {/* AI quick transforms */}
                 <div className="flex flex-wrap items-center gap-1.5 px-4 py-1.5 border-b border-line bg-surface-1/50">
                   <span className="text-[11px] font-medium text-ink-3 flex items-center gap-1 mr-1">
                     <Wand2 size={11} className="text-logo-primary" />
@@ -1060,7 +1172,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                       type="button"
                       disabled={transforming || !draft.body.trim()}
                       onClick={() => transformBody(inst)}
-                      className="px-2 py-0.5 rounded text-xs border border-line bg-background hover:border-logo-primary disabled:opacity-40 cursor-pointer transition-colors"
+                      className="px-2 py-0.5 rounded-md text-xs border border-line bg-surface hover:border-logo-primary disabled:opacity-40 cursor-pointer transition-colors"
                     >
                       {t(labelKey)}
                     </button>
@@ -1073,64 +1185,78 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   )}
                 </div>
 
+                {/* Content Workspace: Split or Single View */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {selected.summary && (
-                    <div className="rounded-xl bg-gradient-to-br from-logo-primary/10 via-surface to-surface border border-logo-primary/25 p-4 text-sm space-y-2.5 shadow-2xs">
+                  {viewMode !== "transcript" && selected.summary && (
+                    <Card className="rounded-xl bg-gradient-to-br from-logo-primary/10 via-surface to-surface border border-logo-primary/25 p-4 text-sm space-y-2.5 shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <p className="text-[11px] uppercase tracking-wider font-semibold text-logo-primary flex items-center gap-1.5">
+                        <Badge
+                          variant="brand"
+                          className="text-[11px] uppercase tracking-wider gap-1.5"
+                        >
                           <Sparkles size={12} />
                           {t(
                             `notes.templates.${selected.summary_template ?? "auto"}`,
                             { defaultValue: t("notes.templates.auto") },
                           )}
-                        </p>
+                        </Badge>
                       </div>
                       <MarkdownContent markdown={selected.summary} />
+
+                      {/* Interactive Checkbox Items */}
                       {summaryItems.some((i) => i.field === "summary") && (
-                        <div className="pt-2 border-t border-logo-primary/20 space-y-0.5">
+                        <div className="pt-2 border-t border-logo-primary/20 space-y-1">
                           {summaryItems
                             .filter((i) => i.field === "summary")
                             .map((item) => (
-                              <button
+                              <div
                                 key={item.line}
-                                type="button"
                                 onClick={() =>
                                   toggleSummaryCheckbox(item.line, !item.done)
                                 }
-                                className="w-full flex items-start gap-2 text-left text-xs px-1.5 py-1 rounded-lg hover:bg-logo-primary/10 cursor-pointer transition-colors"
+                                className="w-full flex items-start gap-2.5 text-left text-xs px-2 py-1.5 rounded-lg hover:bg-logo-primary/10 cursor-pointer transition-colors"
                               >
-                                {item.done ? (
-                                  <CheckSquare
-                                    size={14}
-                                    className="shrink-0 text-logo-primary"
+                                <div
+                                  className="shrink-0 mt-0.5"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Checkbox
+                                    checked={item.done}
+                                    onCheckedChange={(checked) =>
+                                      toggleSummaryCheckbox(
+                                        item.line,
+                                        !!checked,
+                                      )
+                                    }
                                   />
-                                ) : (
-                                  <Square
-                                    size={14}
-                                    className="shrink-0 text-ink-3"
-                                  />
-                                )}
+                                </div>
                                 <span
-                                  className={
-                                    item.done ? "line-through text-ink-3" : ""
-                                  }
+                                  className={`leading-relaxed ${
+                                    item.done
+                                      ? "line-through text-ink-3 decoration-ink-3/50"
+                                      : "text-text font-medium"
+                                  }`}
                                 >
                                   {item.text.replace(/\*\*/g, "")}
                                 </span>
-                              </button>
+                              </div>
                             ))}
                         </div>
                       )}
-                    </div>
+                    </Card>
                   )}
-                  <textarea
-                    value={draft.body}
-                    onChange={(e) => edit({ body: e.target.value })}
-                    placeholder={t("notes.bodyPlaceholder")}
-                    className="w-full min-h-[240px] h-full bg-transparent text-sm leading-relaxed outline-none resize-none font-sans"
-                  />
+
+                  {viewMode !== "summary" && (
+                    <textarea
+                      value={draft.body}
+                      onChange={(e) => edit({ body: e.target.value })}
+                      placeholder={t("notes.bodyPlaceholder")}
+                      className="w-full min-h-[240px] h-full bg-transparent text-sm leading-relaxed outline-none resize-none font-sans"
+                    />
+                  )}
                 </div>
 
+                {/* Footer stats */}
                 <div className="px-4 py-2 border-t border-line bg-surface/50 flex items-center justify-between text-[11px] text-ink-3">
                   <span>
                     {t("notes.editor.stats", {
@@ -1150,7 +1276,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                 </div>
               </>
             )}
-          </div>
+          </Card>
         </div>
       )}
     </div>
