@@ -44,8 +44,8 @@
    Names avoid Tailwind's defaults, which Settings still uses. */
 @theme {
   --font-serif:
-    "EB Garamond", "Iowan Old Style", "New York", "Apple Garamond",
-    "Baskerville", Georgia, serif;
+    -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", "Segoe UI",
+    Roboto, sans-serif;
   --font-display:
     -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display",
     "Segoe UI Variable Display", "Segoe UI", sans-serif;

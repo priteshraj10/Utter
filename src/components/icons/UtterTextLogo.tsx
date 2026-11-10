@@ -16,11 +16,10 @@ const UtterTextLogo = ({
   >
     <UtterMark width={28} height={28} />
     <span
-      className="text-lg font-semibold tracking-tight text-text select-none"
+      className="text-lg font-bold tracking-tight text-text select-none font-sans"
       style={{
-        fontFamily: 'var(--font-serif), "EB Garamond", Georgia, serif',
-        fontSize: "21px",
-        letterSpacing: "-0.02em",
+        fontSize: "20px",
+        letterSpacing: "-0.025em",
       }}
     >
       {BRAND}

@@ -950,7 +950,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
 
                 <div className="flex-1 overflow-y-auto rounded-xl border border-line/60 bg-surface/50 p-6 shadow-inner">
                   {liveStreamText ? (
-                    <p className="text-base font-serif leading-relaxed text-text whitespace-pre-wrap select-text">
+                    <p className="text-base font-sans leading-relaxed text-text whitespace-pre-wrap select-text">
                       {liveStreamText}
                       <span className="inline-block w-2 h-4.5 bg-logo-primary animate-pulse ml-1.5 align-middle rounded-xs" />
                     </p>
