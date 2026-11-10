@@ -241,18 +241,19 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     };
   }, []);
 
-  // When recording is active, stream live words directly into the active note editor
+  const [liveStreamText, setLiveStreamText] = useState("");
+  const lastLoadedIdRef = useRef<number | null>(null);
+
+  // When recording is active, stream live words directly
   useEffect(() => {
+    if (!recording) {
+      setLiveStreamText("");
+      return;
+    }
     const unlisten = events.streamTextEvent.listen((event) => {
-      if (!recording) return;
       const { committed, tentative } = event.payload;
       const combined = (committed ? committed + " " : "") + tentative;
-      if (combined.trim()) {
-        setDraft((prev) => {
-          if (!prev) return { title: "", body: combined };
-          return { ...prev, body: combined };
-        });
-      }
+      setLiveStreamText(combined);
     });
     return () => {
       unlisten.then((fn) => fn());
@@ -266,20 +267,35 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     return () => clearInterval(timer);
   }, [recording]);
 
-  // Load the selected note into the editor
+  // Synchronize draft when selection changes or when the selected note updates from backend
   useEffect(() => {
-    setDraft(selected ? { title: selected.title, body: selected.body } : null);
-    setTemplate(selected?.summary_template ?? defaultTemplate(selected));
-    setTagInput("");
-  }, [selectedId, tab]);
-
-  // An AI title arrives after the summary; show it unless the user is typing
-  useEffect(() => {
-    if (!selected || !draft || pendingSave.current) return;
-    if (selected.title !== draft.title && draft.title === "") {
-      setDraft({ ...draft, title: selected.title });
+    if (!selected) {
+      lastLoadedIdRef.current = null;
+      setDraft(null);
+      return;
     }
-  }, [selected?.title]);
+
+    const isNewSelection = lastLoadedIdRef.current !== selected.id;
+    lastLoadedIdRef.current = selected.id;
+
+    if (isNewSelection) {
+      setDraft({ title: selected.title, body: selected.body });
+      setTemplate(selected.summary_template ?? defaultTemplate(selected));
+      setTagInput("");
+    } else {
+      // Background update (e.g. AI title, AI summary, or fresh save from backend)
+      // Only sync if user is not currently in the middle of unsaved typing
+      if (!pendingSave.current) {
+        setDraft((prev) => {
+          if (!prev) return { title: selected.title, body: selected.body };
+          return {
+            title: selected.title || prev.title,
+            body: selected.body || prev.body,
+          };
+        });
+      }
+    }
+  }, [selected, tab]);
 
   const flushSave = useCallback(async () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -885,28 +901,97 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
 
           {/* Active Note Editor & Minutes Workspace */}
           <Card className="flex-1 min-w-0 flex flex-col rounded-2xl border border-line bg-surface/80 shadow-2xs overflow-hidden">
-            {!selected || !draft ? (
-              <div className="m-auto max-w-md text-center space-y-3 p-6">
-                <Mic size={28} className="mx-auto text-logo-primary" />
-                <p className="text-sm font-medium">{t("notes.introTitle")}</p>
-                <p className="text-sm text-ink-3">
-                  {noteShortcut
-                    ? t("notes.introBody", {
-                        shortcut: formatKeyCombination(noteShortcut, osType),
-                      })
-                    : t("notes.introBodyNoShortcut")}
-                </p>
-                <ul className="text-xs text-ink-3 text-left space-y-1 pt-2">
-                  <li>• {t("notes.introFeatures.templates")}</li>
-                  <li>• {t("notes.introFeatures.ask")}</li>
-                  <li>• {t("notes.introFeatures.actions")}</li>
-                  <li>• {t("notes.introFeatures.digest")}</li>
-                </ul>
-                <div className="pt-3 flex items-center justify-center gap-2">
+            {recording ? (
+              <div className="flex-1 flex flex-col p-6 space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-line">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-text">
+                        {t("notes.recordMeeting")}
+                      </h3>
+                      <p className="text-xs text-ink-3">
+                        {t("notes.liveStreamingHint")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="brand"
+                      className="font-mono text-xs px-2.5 py-0.5"
+                    >
+                      {recordStart !== null
+                        ? formatDuration((now - recordStart) / 1000)
+                        : "00:00"}
+                    </Badge>
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      className="flex items-center gap-1.5 rounded-xl px-3 py-1 font-medium shadow-2xs"
+                      onClick={() => commands.toggleVoiceNote()}
+                    >
+                      <Square size={12} />
+                      <span>{t("notes.stop")}</span>
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="rounded-xl px-2.5 py-1"
+                      onClick={() => commands.cancelOperation()}
+                      title={t("common.cancel")}
+                    >
+                      <X size={13} />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto rounded-xl border border-line/60 bg-surface/50 p-6 shadow-inner">
+                  {liveStreamText ? (
+                    <p className="text-base font-serif leading-relaxed text-text whitespace-pre-wrap select-text">
+                      {liveStreamText}
+                      <span className="inline-block w-2 h-4.5 bg-logo-primary animate-pulse ml-1.5 align-middle rounded-xs" />
+                    </p>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-ink-3 space-y-3">
+                      <Mic
+                        size={32}
+                        className="animate-pulse text-logo-primary"
+                      />
+                      <p className="text-sm font-medium">
+                        {t("notes.listening")}
+                      </p>
+                      <p className="text-xs max-w-sm text-ink-3/80">
+                        {t("notes.startSpeakingHint")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : !selected || !draft ? (
+              <div className="m-auto max-w-sm text-center space-y-3.5 p-6">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-surface border border-line shadow-2xs flex items-center justify-center">
+                  <Mic size={22} className="text-logo-primary" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-text">
+                    {t("notes.introTitle")}
+                  </h3>
+                  <p className="text-xs text-ink-3 leading-relaxed">
+                    {noteShortcut
+                      ? t("notes.introBody", {
+                          shortcut: formatKeyCombination(noteShortcut, osType),
+                        })
+                      : t("notes.introBodyNoShortcut")}
+                  </p>
+                </div>
+                <div className="pt-2 flex items-center justify-center gap-2">
                   <Button
                     variant="primary"
                     size="sm"
-                    className="flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 shadow-2xs font-medium"
+                    className="flex items-center gap-1.5 rounded-xl px-4 py-1.5 shadow-2xs font-medium cursor-pointer"
                     onClick={() => commands.toggleVoiceNote()}
                   >
                     <Mic size={13} />
@@ -915,9 +1000,19 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 shadow-2xs font-medium"
+                    className="flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 shadow-2xs font-medium cursor-pointer"
+                    onClick={createNote}
+                  >
+                    <Plus size={13} />
+                    <span>{t("notes.new")}</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 shadow-2xs font-medium cursor-pointer"
                     onClick={importMediaFile}
                     disabled={importingAudio}
+                    title={t("notes.importMedia")}
                   >
                     <Video size={13} className="text-purple-400" />
                     <span>{t("notes.importMedia")}</span>

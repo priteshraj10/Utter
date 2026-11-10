@@ -1,9 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  BarChart3,
-  BookOpen,
-  CheckSquare,
   Cog,
   Cpu,
   FlaskConical,
@@ -11,27 +8,15 @@ import {
   Home,
   Info,
   NotebookPen,
-  SlidersHorizontal,
-  Sparkles,
-  TextQuote,
-  Wand2,
 } from "lucide-react";
 import UtterTextLogo from "./icons/UtterTextLogo";
 import { useSettings } from "../hooks/useSettings";
 import { useOsType } from "@/hooks/useOsType";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
-import {
-  GeneralSettings,
-  PostProcessingSettings,
-  ModelsSettings,
-  PersonalizeSettings,
-} from "./settings";
+import { GeneralSettings, ModelsSettings } from "./settings";
 
 const NotesPage = React.lazy(() =>
   import("./notes/NotesPage").then((m) => ({ default: m.NotesPage })),
-);
-const StatsPage = React.lazy(() =>
-  import("./stats/StatsPage").then((m) => ({ default: m.StatsPage })),
 );
 const HistorySettings = React.lazy(() =>
   import("./settings/history/HistorySettings").then((m) => ({
@@ -64,71 +49,24 @@ interface SectionConfig {
   icon: React.ComponentType<IconProps>;
   /** `null` when App renders the section itself (Debug, with its handlers). */
   component: React.ComponentType | null;
-  group: "meetings" | "hub" | "workspace" | "system";
+  group: "workspace" | "system";
   enabled: (settings: any) => boolean;
 }
-
-const StyleSection: React.FC = () => <PersonalizeSettings initialTab="style" />;
-const DictionarySection: React.FC = () => (
-  <PersonalizeSettings initialTab="dictionary" />
-);
-const SnippetsSection: React.FC = () => (
-  <PersonalizeSettings initialTab="snippets" />
-);
-const TransformsSection: React.FC = () => (
-  <PersonalizeSettings initialTab="transforms" />
-);
-const TasksSection: React.FC = () => <NotesPage initialTab="actions" />;
 
 export const SECTIONS_CONFIG = {
   general: {
     labelKey: "sidebar.general",
     icon: Home,
     component: GeneralSettings,
-    group: "hub",
+    group: "workspace",
     enabled: () => true,
-  },
-  style: {
-    labelKey: "sidebar.style",
-    icon: SlidersHorizontal,
-    component: StyleSection,
-    group: "hub",
-    enabled: () => false,
-  },
-  dictionary: {
-    labelKey: "sidebar.dictionary",
-    icon: BookOpen,
-    component: DictionarySection,
-    group: "hub",
-    enabled: () => false,
-  },
-  snippets: {
-    labelKey: "sidebar.snippets",
-    icon: TextQuote,
-    component: SnippetsSection,
-    group: "hub",
-    enabled: () => false,
-  },
-  transforms: {
-    labelKey: "sidebar.transforms",
-    icon: Wand2,
-    component: TransformsSection,
-    group: "hub",
-    enabled: () => false,
   },
   notes: {
     labelKey: "sidebar.notes",
     icon: NotebookPen,
     component: NotesPage,
-    group: "meetings",
+    group: "workspace",
     enabled: () => true,
-  },
-  tasks: {
-    labelKey: "sidebar.tasks",
-    icon: CheckSquare,
-    component: TasksSection,
-    group: "meetings",
-    enabled: () => false,
   },
   history: {
     labelKey: "sidebar.history",
@@ -137,33 +75,12 @@ export const SECTIONS_CONFIG = {
     group: "workspace",
     enabled: () => true,
   },
-  stats: {
-    labelKey: "sidebar.stats",
-    icon: BarChart3,
-    component: StatsPage,
-    group: "workspace",
-    enabled: () => false,
-  },
-  personalize: {
-    labelKey: "sidebar.personalize",
-    icon: SlidersHorizontal,
-    component: PersonalizeSettings,
-    group: "system",
-    enabled: () => false,
-  },
   models: {
     labelKey: "sidebar.models",
     icon: Cpu,
     component: ModelsSettings,
     group: "system",
     enabled: () => true,
-  },
-  postprocessing: {
-    labelKey: "sidebar.postProcessing",
-    icon: Sparkles,
-    component: PostProcessingSettings,
-    group: "system",
-    enabled: () => false,
   },
   advanced: {
     labelKey: "sidebar.advanced",
@@ -205,8 +122,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .filter(([_, config]) => config.enabled(settings))
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
-  const meetingItems = availableSections.filter((s) => s.group === "meetings");
-  const hubItems = availableSections.filter((s) => s.group === "hub");
   const workspaceItems = availableSections.filter(
     (s) => s.group === "workspace",
   );
@@ -260,20 +175,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="space-y-1">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
-            {t("sidebar.groups.meetings")}
-          </p>
-          <div className="space-y-0.5">{meetingItems.map(renderNavItem)}</div>
-        </div>
-
-        <div className="pt-2 border-t border-line space-y-1">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
-            {t("sidebar.groups.dictation")}
-          </p>
-          <div className="space-y-0.5">{hubItems.map(renderNavItem)}</div>
-        </div>
-
-        <div className="pt-2 border-t border-line space-y-1">
           <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
             {t("sidebar.groups.workspace")}
           </p>

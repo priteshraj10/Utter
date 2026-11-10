@@ -2159,7 +2159,11 @@ pub const NOTE_TITLE_PROMPT: &str = "<note>\n${output}\n</note>\n\nWrite a short
 /// title may replace it.
 pub fn is_auto_title(title: &str, body: &str) -> bool {
     let title = title.trim();
-    title.is_empty() || title == note_title(body)
+    title.is_empty()
+        || title.eq_ignore_ascii_case("untitled note")
+        || title.eq_ignore_ascii_case("untitled")
+        || title == note_title(body)
+        || title == smart_note_title(body)
 }
 
 /// Cleans up an AI-written title: first line, no quotes or heading marks.
@@ -3566,8 +3570,9 @@ mod tests {
             Some("Q3 Planning Sync".to_string())
         );
         assert!(is_auto_title("", "anything"));
+        assert!(is_auto_title("Untitled Note", "anything"));
         assert!(is_auto_title("Buy milk", "Buy milk. Then call mom."));
-        assert!(!is_auto_title("Groceries", "Buy milk."));
+        assert!(!is_auto_title("Groceries", "Buy milk. Then call mom."));
     }
 
     #[test]
