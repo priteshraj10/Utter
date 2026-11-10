@@ -22,6 +22,8 @@ import { LanguageDetection } from "../LanguageDetection";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
 import { VadBackendSelector } from "../VadBackendSelector";
+import { CustomWords } from "../CustomWords";
+import { PostProcessingSettingsApi } from "../PostProcessingSettingsApi";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -50,6 +52,11 @@ export const AdvancedSettings: React.FC = () => {
         <VoiceActivityDetection descriptionMode="tooltip" grouped={true} />
         <LongFormChunking descriptionMode="tooltip" grouped={true} />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
+        <CustomWords descriptionMode="tooltip" grouped={true} />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("sidebar.postProcessing")}>
+        <PostProcessingSettingsApi />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.history")}>
