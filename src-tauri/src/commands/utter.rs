@@ -106,6 +106,52 @@ pub async fn summarize_note(
     crate::actions::summarize_note(&app, id, template).await
 }
 
+/// Whether a local AI (Ollama) is installed and running, and its model.
+#[tauri::command]
+#[specta::specta]
+pub async fn local_ai_status() -> crate::local_llm::LocalAiStatus {
+    crate::local_llm::status().await
+}
+
+/// Whether the speaker model is on disk, and how big its download is.
+#[derive(serde::Serialize, specta::Type)]
+pub struct SpeakerModelStatus {
+    pub downloaded: bool,
+    pub size_mb: u32,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn speaker_model_status(app: AppHandle) -> SpeakerModelStatus {
+    SpeakerModelStatus {
+        downloaded: crate::speakers::model_ready(&app),
+        size_mb: crate::catalog::DIARIZER
+            .as_ref()
+            .map(|d| (d.size_bytes / 1_000_000) as u32)
+            .unwrap_or(0),
+    }
+}
+
+/// Finds who spoke when in note `id`, rewrites its transcript with speaker
+/// labels and re-summarizes it. Returns how many speakers were found.
+#[tauri::command]
+#[specta::specta]
+pub async fn label_note_speakers(app: AppHandle, id: i64) -> Result<u32, String> {
+    crate::speakers::label_note_speakers(&app, id)
+        .await
+        .map(|n| n as u32)
+        .map_err(|e| e.to_string())
+}
+
+/// Transcribes note `id` again from its recording and re-summarizes it.
+#[tauri::command]
+#[specta::specta]
+pub async fn retranscribe_note(app: AppHandle, id: i64) -> Result<(), String> {
+    crate::speakers::retranscribe_note(&app, id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Replaces (or clears) a note's summary, e.g. after ticking an action item.
 #[tauri::command]
 #[specta::specta]

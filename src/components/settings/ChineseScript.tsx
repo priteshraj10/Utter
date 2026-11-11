@@ -11,7 +11,7 @@ interface ChineseScriptProps {
 }
 
 export const ChineseScriptSetting: React.FC<ChineseScriptProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "inline", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 

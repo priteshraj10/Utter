@@ -32,10 +32,21 @@ pub enum RecordingPhase {
 #[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
 pub struct RecordingStateEvent {
     pub phase: RecordingPhase,
+    /// The shortcut that started the recording (`transcribe`, `voice_note`,
+    /// ...), sent with `Started` so the UI can say where the words will go.
+    pub binding_id: Option<String>,
 }
 
 fn emit_recording_phase(app: &AppHandle, phase: RecordingPhase) {
-    if let Err(e) = (RecordingStateEvent { phase }).emit(app) {
+    emit_recording_phase_for(app, phase, None);
+}
+
+fn emit_recording_phase_for(app: &AppHandle, phase: RecordingPhase, binding_id: Option<&str>) {
+    let event = RecordingStateEvent {
+        phase,
+        binding_id: binding_id.map(str::to_string),
+    };
+    if let Err(e) = event.emit(app) {
         warn!("Failed to emit recording state {phase:?}: {e}");
     }
 }
@@ -730,7 +741,7 @@ fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
             let started = start(app, &binding_id, &hotkey_string);
             state.on_start_result(&binding_id, started);
             if started {
-                emit_recording_phase(app, RecordingPhase::Started);
+                emit_recording_phase_for(app, RecordingPhase::Started, Some(&binding_id));
             }
         }
         Effect::Stop {

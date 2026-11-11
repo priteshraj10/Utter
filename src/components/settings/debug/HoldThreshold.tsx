@@ -13,7 +13,7 @@ interface HoldThresholdProps {
  * press counts as push-to-talk instead of a tap.
  */
 export const HoldThreshold: React.FC<HoldThresholdProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

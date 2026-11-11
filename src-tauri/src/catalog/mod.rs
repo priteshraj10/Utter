@@ -408,6 +408,43 @@ pub fn mirror_fallbacks(model_id: &str) -> Vec<MirrorFile> {
 }
 
 /// Ordered mirror URLs for the language detector's file.
+/// The speaker diarization model ("who spoke when"): the catalog's Sortformer
+/// at its default quant. Up to `MAX_SPEAKERS` speakers.
+pub struct DiarizerFile {
+    pub repo_id: String,
+    pub revision: String,
+    pub filename: String,
+    pub size_bytes: u64,
+    sha256: String,
+}
+
+pub static DIARIZER: Lazy<Option<DiarizerFile>> = Lazy::new(|| {
+    let model = ROOT
+        .models
+        .iter()
+        .find(|m| m.role == "diarize" && m.family == "sortformer")?;
+    let file = model.default_file()?;
+    Some(DiarizerFile {
+        repo_id: model.repository.clone(),
+        revision: model.revision.clone(),
+        filename: file.filename.clone(),
+        size_bytes: file.size,
+        sha256: file.sha256.clone(),
+    })
+});
+
+pub fn diarizer_mirrors() -> Vec<MirrorFile> {
+    DIARIZER.as_ref().map_or_else(Vec::new, |d| {
+        mirror_files(
+            &d.repo_id,
+            &d.revision,
+            &d.filename,
+            &d.sha256,
+            d.size_bytes,
+        )
+    })
+}
+
 pub fn language_detector_mirrors() -> Vec<MirrorFile> {
     LANGUAGE_DETECTOR.as_ref().map_or_else(Vec::new, |d| {
         mirror_files(
@@ -503,6 +540,10 @@ mod tests {
 
     #[test]
     fn names_a_language_detector() {
+        let diarizer = DIARIZER.as_ref().expect("catalog has a speaker model");
+        assert!(diarizer.filename.ends_with(".gguf"));
+        assert!(diarizer.size_bytes > 0);
+
         let detector = LANGUAGE_DETECTOR
             .as_ref()
             .expect("catalog names a language detector");

@@ -1,27 +1,33 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Cog,
   Cpu,
   FlaskConical,
-  History,
   Home,
   Info,
   NotebookPen,
+  Settings2,
+  WandSparkles,
+  Wrench,
 } from "lucide-react";
 import UtterTextLogo from "./icons/UtterTextLogo";
 import { useSettings } from "../hooks/useSettings";
 import { useOsType } from "@/hooks/useOsType";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
 import { GeneralSettings, ModelsSettings } from "./settings";
+import type { AppSettings } from "@/bindings";
+import { cn } from "@/lib/utils/cn";
 
 const NotesPage = React.lazy(() =>
   import("./notes/NotesPage").then((m) => ({ default: m.NotesPage })),
 );
-const HistorySettings = React.lazy(() =>
-  import("./settings/history/HistorySettings").then((m) => ({
-    default: m.HistorySettings,
+const PersonalizePage = React.lazy(() =>
+  import("./personalize/PersonalizePage").then((m) => ({
+    default: m.PersonalizePage,
   })),
+);
+const HomePage = React.lazy(() =>
+  import("./home/HomePage").then((m) => ({ default: m.HomePage })),
 );
 const AdvancedSettings = React.lazy(() =>
   import("./settings/advanced/AdvancedSettings").then((m) => ({
@@ -39,9 +45,7 @@ export type SidebarSection = keyof typeof SECTIONS_CONFIG;
 interface IconProps {
   width?: number | string;
   height?: number | string;
-  size?: number | string;
   className?: string;
-  [key: string]: any;
 }
 
 interface SectionConfig {
@@ -50,14 +54,14 @@ interface SectionConfig {
   /** `null` when App renders the section itself (Debug, with its handlers). */
   component: React.ComponentType | null;
   group: "workspace" | "system";
-  enabled: (settings: any) => boolean;
+  enabled: (settings: AppSettings | null | undefined) => boolean;
 }
 
 export const SECTIONS_CONFIG = {
-  general: {
-    labelKey: "sidebar.general",
+  home: {
+    labelKey: "sidebar.home",
     icon: Home,
-    component: GeneralSettings,
+    component: HomePage,
     group: "workspace",
     enabled: () => true,
   },
@@ -68,11 +72,18 @@ export const SECTIONS_CONFIG = {
     group: "workspace",
     enabled: () => true,
   },
-  history: {
-    labelKey: "sidebar.history",
-    icon: History,
-    component: HistorySettings,
+  personalize: {
+    labelKey: "sidebar.personalize",
+    icon: WandSparkles,
+    component: PersonalizePage,
     group: "workspace",
+    enabled: () => true,
+  },
+  general: {
+    labelKey: "sidebar.settings",
+    icon: Settings2,
+    component: GeneralSettings,
+    group: "system",
     enabled: () => true,
   },
   models: {
@@ -84,7 +95,7 @@ export const SECTIONS_CONFIG = {
   },
   advanced: {
     labelKey: "sidebar.advanced",
-    icon: Cog,
+    icon: Wrench,
     component: AdvancedSettings,
     group: "system",
     enabled: () => true,
@@ -137,74 +148,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         key={section.id}
         type="button"
-        className={`group relative flex gap-2.5 items-center px-3 py-2 w-full rounded-xl cursor-pointer transition-all text-left ${
+        aria-current={isActive ? "page" : undefined}
+        className={cn(
+          "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-start text-sm transition-colors cursor-pointer",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           isActive
-            ? "bg-surface text-text font-medium shadow-2xs border border-line ring-1 ring-logo-primary/20"
-            : "text-ink-2 hover:bg-surface/60 hover:text-text border border-transparent"
-        }`}
+            ? "bg-card text-foreground font-medium shadow-xs ring-1 ring-border"
+            : "text-ink-2 hover:bg-accent hover:text-foreground",
+        )}
         onClick={() => onSectionChange(section.id)}
       >
         <Icon
           width={16}
           height={16}
-          className={`shrink-0 transition-colors ${
-            isActive ? "text-logo-primary" : "text-ink-3 group-hover:text-ink-1"
-          }`}
+          className={cn(
+            "shrink-0",
+            isActive ? "text-primary" : "text-muted-foreground",
+          )}
         />
-        <span
-          className="text-small truncate flex-1"
-          title={t(section.labelKey)}
-        >
+        <span className="truncate" title={t(section.labelKey)}>
           {t(section.labelKey)}
         </span>
-        {isActive && (
-          <span className="w-1.5 h-1.5 rounded-full bg-logo-primary shrink-0" />
-        )}
       </button>
     );
   };
 
   return (
-    <aside className="flex flex-col w-56 shrink-0 h-full bg-sidebar border-e border-line px-3 py-4 justify-between select-none">
-      <div className="space-y-4 overflow-y-auto">
-        <div className="px-2 pt-1 pb-1 flex items-center justify-between">
-          <UtterTextLogo width={124} />
-          <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md bg-logo-primary/15 text-logo-primary">
-            {t("sidebar.pro")}
-          </span>
+    <aside className="flex h-full w-52 shrink-0 select-none flex-col justify-between border-e border-border bg-sidebar px-2.5 py-4">
+      <div className="space-y-5 overflow-y-auto">
+        <div className="px-2.5 pt-1">
+          <UtterTextLogo width={112} />
         </div>
-
-        <div className="space-y-1">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
-            {t("sidebar.groups.workspace")}
-          </p>
-          <div className="space-y-0.5">{workspaceItems.map(renderNavItem)}</div>
-        </div>
+        <nav className="space-y-0.5">{workspaceItems.map(renderNavItem)}</nav>
       </div>
 
-      <div className="pt-3 border-t border-line space-y-2">
-        <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
-          {t("sidebar.groups.system")}
-        </p>
-        <div className="space-y-0.5">{systemItems.map(renderNavItem)}</div>
+      <div className="space-y-3">
+        <nav className="space-y-0.5 border-t border-border pt-3">
+          {systemItems.map(renderNavItem)}
+        </nav>
 
-        {/* Quick Shortcut Badge Widget */}
-        <div className="mt-2 p-2.5 rounded-xl border border-line bg-surface/70 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        {dictateShortcut && (
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-xs">
+            <span className="text-muted-foreground">
+              {t("sidebar.dictate")}
             </span>
-            <span className="text-tag text-ink-2 font-medium">
-              {t("sidebar.status.ready")}
-            </span>
+            <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium text-foreground">
+              {formatKeyCombination(dictateShortcut, osType)}
+            </kbd>
           </div>
-          <kbd className="px-1.5 py-0.5 rounded-md border border-line bg-surface text-[10.5px] font-mono text-ink-2 font-semibold shadow-2xs">
-            {dictateShortcut
-              ? formatKeyCombination(dictateShortcut, osType)
-              : "⌥ Space"}
-          </kbd>
-        </div>
+        )}
       </div>
     </aside>
   );

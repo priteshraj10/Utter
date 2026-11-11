@@ -22,7 +22,6 @@ import { LanguageDetection } from "../LanguageDetection";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
 import { VadBackendSelector } from "../VadBackendSelector";
-import { CustomWords } from "../CustomWords";
 import { PostProcessingSettingsApi } from "../PostProcessingSettingsApi";
 
 export const AdvancedSettings: React.FC = () => {
@@ -33,26 +32,25 @@ export const AdvancedSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.advanced.groups.app")}>
-        <StartHidden descriptionMode="tooltip" grouped={true} />
-        <AutostartToggle descriptionMode="tooltip" grouped={true} />
-        <ShowTrayIcon descriptionMode="tooltip" grouped={true} />
-        <ShowOverlay descriptionMode="tooltip" grouped={true} />
-        <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
-        <ExperimentalToggle descriptionMode="tooltip" grouped={true} />
+        <StartHidden grouped={true} />
+        <AutostartToggle grouped={true} />
+        <ShowTrayIcon grouped={true} />
+        <ShowOverlay grouped={true} />
+        <ModelUnloadTimeoutSetting grouped={true} />
+        <ExperimentalToggle grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.output")}>
-        <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
-        <TypingToolSetting descriptionMode="tooltip" grouped={true} />
-        <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />
-        <AutoSubmit descriptionMode="tooltip" grouped={true} />
+        <PasteMethodSetting grouped={true} />
+        <TypingToolSetting grouped={true} />
+        <ClipboardHandlingSetting grouped={true} />
+        <AutoSubmit grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>
-        <VoiceActivityDetection descriptionMode="tooltip" grouped={true} />
-        <LongFormChunking descriptionMode="tooltip" grouped={true} />
-        <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
-        <CustomWords descriptionMode="tooltip" grouped={true} />
+        <VoiceActivityDetection grouped={true} />
+        <LongFormChunking grouped={true} />
+        <AppendTrailingSpace grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title={t("sidebar.postProcessing")}>
@@ -60,23 +58,17 @@ export const AdvancedSettings: React.FC = () => {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.history")}>
-        <HistoryLimit descriptionMode="tooltip" grouped={true} />
-        <RecordingRetentionPeriodSelector
-          descriptionMode="tooltip"
-          grouped={true}
-        />
+        <HistoryLimit grouped={true} />
+        <RecordingRetentionPeriodSelector grouped={true} />
       </SettingsGroup>
 
       {experimentalEnabled && (
         <SettingsGroup title={t("settings.advanced.groups.experimental")}>
-          <KeyboardImplementationSelector
-            descriptionMode="tooltip"
-            grouped={true}
-          />
-          <AccelerationSelector descriptionMode="tooltip" grouped={true} />
-          <LazyStreamClose descriptionMode="tooltip" grouped={true} />
-          <VadBackendSelector descriptionMode="tooltip" grouped={true} />
-          <LanguageDetection descriptionMode="tooltip" grouped={true} />
+          <KeyboardImplementationSelector grouped={true} />
+          <AccelerationSelector grouped={true} />
+          <LazyStreamClose grouped={true} />
+          <VadBackendSelector grouped={true} />
+          <LanguageDetection grouped={true} />
         </SettingsGroup>
       )}
     </div>

@@ -125,7 +125,7 @@ export const ActionItemsPanel: React.FC<{
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-3">
         {groups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-3 shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-moss-wash border border-border flex items-center justify-center text-moss mb-3 shadow-2xs">
               <CheckCircle2 size={24} />
             </div>
             <p className="text-sm font-medium text-text mb-1">

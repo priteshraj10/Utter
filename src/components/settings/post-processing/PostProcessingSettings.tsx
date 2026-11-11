@@ -31,7 +31,6 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
       <SettingContainer
         title={t("settings.postProcessing.api.provider.title")}
         description={t("settings.postProcessing.api.provider.description")}
-        descriptionMode="tooltip"
         layout="horizontal"
         grouped={true}
       >
@@ -58,7 +57,6 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               description={t(
                 "settings.postProcessing.api.apiFormat.description",
               )}
-              descriptionMode="tooltip"
               layout="horizontal"
               grouped={true}
             >
@@ -90,7 +88,6 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             <SettingContainer
               title={t("settings.postProcessing.api.baseUrl.title")}
               description={t("settings.postProcessing.api.baseUrl.description")}
-              descriptionMode="tooltip"
               layout="horizontal"
               grouped={true}
             >
@@ -115,7 +112,6 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
           <SettingContainer
             title={t("settings.postProcessing.api.apiKey.title")}
             description={t("settings.postProcessing.api.apiKey.description")}
-            descriptionMode="tooltip"
             layout="horizontal"
             grouped={true}
           >
@@ -142,7 +138,6 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               ? t("settings.postProcessing.api.model.descriptionCustom")
               : t("settings.postProcessing.api.model.descriptionDefault")
           }
-          descriptionMode="tooltip"
           layout="stacked"
           grouped={true}
         >
@@ -291,7 +286,6 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
       description={t(
         "settings.postProcessing.prompts.selectedPrompt.description",
       )}
-      descriptionMode="tooltip"
       layout="stacked"
       grouped={true}
     >
@@ -470,7 +464,6 @@ export const PostProcessingSettings: React.FC = () => {
       <SettingsGroup title={t("settings.postProcessing.hotkey.title")}>
         <ShortcutInput
           shortcutId="transcribe_with_post_process"
-          descriptionMode="tooltip"
           grouped={true}
         />
       </SettingsGroup>

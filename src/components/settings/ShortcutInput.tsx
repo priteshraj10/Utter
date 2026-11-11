@@ -20,7 +20,7 @@ interface ShortcutInputProps {
  * Escape is recorded like any key (Cancel's default is Escape).
  */
 export const ShortcutInput: React.FC<ShortcutInputProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
   shortcutId,
   disabled = false,

@@ -19,7 +19,6 @@ const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
         setVersion(appVersion);
       } catch (error) {
         console.error("Failed to get app version:", error);
-        setVersion("0.1.2");
       }
     };
 
@@ -27,22 +26,28 @@ const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
   }, []);
 
   return (
-    <div className="w-full border-t border-line pt-3">
-      <div className="flex justify-between items-center text-xs px-4 pb-3 text-ink-2">
+    <footer className="w-full border-t border-border bg-sidebar">
+      <div className="flex h-10 items-center justify-between px-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
           <ModelSelector />
           <TranscriptionStatus onShowHistory={onShowHistory} />
         </div>
 
         {/* Update Status */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <UpdateChecker />
-          <span>•</span>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span>v{version}</span>
+          {version && (
+            <>
+              <span aria-hidden="true" className="text-line-strong">
+                ·
+              </span>
+              {/* eslint-disable-next-line i18next/no-literal-string */}
+              <span className="tabular-nums">v{version}</span>
+            </>
+          )}
         </div>
       </div>
-    </div>
+    </footer>
   );
 };
 

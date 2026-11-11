@@ -10,31 +10,16 @@
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
   },
   "sidebar": {
-    "general": "Home",
     "models": "Models",
     "advanced": "Advanced",
     "postProcessing": "Post-Processing",
-    "history": "History",
     "debug": "Debug",
     "about": "About",
-    "notes": "Notetaker",
-    "stats": "Insights",
-    "personalize": "Personalize",
-    "style": "Style",
-    "dictionary": "Dictionary",
-    "snippets": "Snippets",
-    "transforms": "Transforms",
-    "tasks": "My Tasks",
-    "pro": "Pro",
-    "groups": {
-      "meetings": "Meetings & Notes",
-      "dictation": "Voice Flow",
-      "workspace": "Workspace",
-      "system": "System"
-    },
-    "status": {
-      "ready": "Ready"
-    }
+    "notes": "Notes",
+    "dictate": "Dictate",
+    "home": "Home",
+    "settings": "Settings",
+    "personalize": "Personalize"
   },
   "onboarding": {
     "customModelDescription": "Not officially supported",
@@ -343,35 +328,33 @@
       "title": "{{model}} Settings"
     },
     "general": {
-      "title": "General",
-      "micActive": "Mic Active",
       "shortcut": {
-        "title": "Utter Shortcuts",
-        "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
-        "loading": "Loading shortcuts...",
+        "title": "Shortcuts",
+        "description": "Keyboard shortcuts that start and stop recording.",
+        "loading": "Loading shortcuts…",
         "none": "No shortcuts configured",
         "notFound": "Shortcut not found",
-        "pressKeys": "Press keys...",
+        "pressKeys": "Press keys…",
         "bindings": {
           "transcribe": {
-            "name": "Transcribe Shortcut",
-            "description": "The keyboard shortcut to record and transcribe your voice."
+            "name": "Dictate",
+            "description": "Records your voice and types the transcription."
           },
           "cancel": {
-            "name": "Cancel Shortcut",
-            "description": "The keyboard shortcut to cancel the current recording."
+            "name": "Cancel",
+            "description": "Stops the current recording without typing anything."
           },
           "transcribe_with_post_process": {
-            "name": "Post-Processing Hotkey",
-            "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+            "name": "Dictate with cleanup",
+            "description": "Like Dictate, but always runs AI cleanup on the result."
           },
           "command_mode": {
-            "name": "Command Mode Shortcut",
+            "name": "Command mode",
             "description": "Select text, hold this and say how to change it (\"make this friendlier\", \"translate to Hindi\"). With nothing selected, say what to write."
           },
           "voice_note": {
-            "name": "Voice Note Shortcut",
-            "description": "Records into Notes instead of typing. Recordings over a minute are summarized automatically."
+            "name": "Voice note",
+            "description": "Saves the recording to Notes instead of typing it. Recordings longer than a minute are summarized."
           }
         },
         "errors": {
@@ -380,8 +363,8 @@
       },
       "language": {
         "title": "Language",
-        "description": "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language.",
-        "searchPlaceholder": "Search languages...",
+        "description": "The language you speak. Auto detects it for you; picking one can improve accuracy.",
+        "searchPlaceholder": "Search languages…",
         "noResults": "No languages found",
         "auto": "Auto",
         "autoUnavailable": {
@@ -395,13 +378,13 @@
         "stopDetectorDownload": "Stop downloading the language detector"
       },
       "preferredLanguages": {
-        "title": "Preferred Languages",
-        "description": "The languages you speak. Utter uses them to recommend models.",
+        "title": "Preferred languages",
+        "description": "The languages you speak. Used to recommend models.",
         "noMatch": "No language matches “{{query}}”",
         "weak": "No model recognizes {{languages}} well yet."
       },
       "shortcutActivation": {
-        "title": "Shortcut Behavior",
+        "title": "Shortcut behavior",
         "description": "Choose how the transcribe shortcut starts and stops recording.",
         "options": {
           "holdOrToggle": "Auto",
@@ -454,7 +437,6 @@
         "deleteFailed": "Some old models couldn't be deleted. Check the log for details."
       },
       "rescan": {
-        "label": "Rescan",
         "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Utter"
       }
     },
@@ -633,10 +615,6 @@
           "earshot": "Earshot"
         }
       },
-      "fillerWordRemoval": {
-        "title": "Remove Filler Words",
-        "description": "Removes common hesitation words from transcriptions. Turn off to keep them."
-      },
       "chineseScript": {
         "title": "Chinese Script",
         "description": "Writes Mandarin and Cantonese transcriptions in Simplified characters, or in Traditional characters as written in Taiwan or Hong Kong. Other languages are left unchanged.",
@@ -712,10 +690,9 @@
       }
     },
     "history": {
-      "title": "History",
-      "openFolder": "Open Recordings Folder",
-      "loading": "Loading history...",
-      "empty": "No transcriptions yet. Start recording to build your history!",
+      "openFolder": "Open recordings folder",
+      "loading": "Loading history…",
+      "empty": "No transcriptions yet. They appear here after you dictate.",
       "copyToClipboard": "Copy transcription to clipboard",
       "copyError": "Failed to copy transcription to clipboard.",
       "save": "Save transcription",
@@ -724,13 +701,13 @@
       "deleteError": "Failed to delete entry. Please try again.",
       "retranscribe": "Re-transcribe",
       "cancelTranscription": "Cancel transcription",
-      "transcribing": "Transcribing...",
+      "transcribing": "Transcribing…",
       "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
       "notTranscribed": "Not transcribed. You can transcribe it using the retry icon.",
-      "transcribeFile": "Transcribe File",
+      "transcribeFile": "Transcribe file",
       "mediaFiles": "Audio and video",
       "fileUnsupported": "Couldn't read audio from {{name}}.",
-      "readingFile": "Reading {{name}}...",
+      "readingFile": "Reading {{name}}…",
       "transcribeFailed": "Transcription failed. Please try again.",
       "waiting": "Waiting to transcribe",
       "transcribingPercent": "Transcribing, {{percent}}%",
@@ -740,14 +717,14 @@
       "dropDescription": "It'll show up in History.",
       "searchPlaceholder": "Search your dictations",
       "noMatches": "No dictations match “{{query}}”.",
-      "aiCleanedBadge": "AI Cleaned",
-      "rawBadge": "Raw Speech",
-      "toggleRawHint": "Click to switch between AI cleaned output and raw transcript",
-      "editAndLearn": "Edit & auto-learn dictionary words",
-      "learnWordsHint": "Correct any misspelled names or jargon below — Utter will add them to your Dictionary automatically.",
-      "learnAndCopy": "Learn Words & Copy",
+      "aiCleanedBadge": "Cleaned up",
+      "rawBadge": "Original",
+      "toggleRawHint": "Switch between the cleaned-up text and the original transcript",
+      "editAndLearn": "Edit and add words to dictionary",
+      "learnWordsHint": "Fix any misspelled names or terms below. Corrected words are added to your dictionary.",
+      "learnAndCopy": "Save words and copy",
       "learnedWords": "Added to dictionary: {{words}}",
-      "noNewWordsLearned": "Copied text (no new unfamiliar words detected)"
+      "noNewWordsLearned": "Copied. No new words found."
     },
     "debug": {
       "title": "Debug",
@@ -840,7 +817,7 @@
       },
       "postProcessingToggle": {
         "label": "Post Processing",
-        "description": "Enable AI-powered text refinement after transcription"
+        "description": "Clean up transcriptions with an AI model"
       },
       "muteWhileRecording": {
         "label": "Mute While Recording",
@@ -904,125 +881,32 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Utter"
+        "description": "The version of Utter you are running"
       },
       "whatsNewUpdates": {
-        "label": "Show What's New",
+        "label": "Show what's new",
         "description": "Show release notes after Utter updates"
       },
       "appDataDirectory": {
-        "title": "App Data Directory",
-        "description": "Location where Utter stores its data"
+        "title": "Data folder",
+        "description": "Where Utter stores settings, models and recordings"
       },
       "highlights": {
-        "localEngine": "On-Device Speech Engine",
-        "contextAi": "Context-Aware AI Cleanup",
-        "privateByDesign": "Private by Design"
+        "localEngine": "Runs on your device",
+        "contextAi": "Optional AI cleanup",
+        "privateByDesign": "Audio stays on your computer"
       },
       "acknowledgments": {
         "title": "Acknowledgments",
         "utter": {
-          "description": "Fast, private, context-aware voice dictation, command mode, and voice notes for your desktop."
+          "description": "Private voice dictation, command mode and voice notes for your desktop."
         },
         "ggml": {
           "title": "ggml & Whisper / Parakeet",
-          "description": "High-performance tensor library and local speech recognition models",
+          "description": "Tensor library and local speech recognition models",
           "details": "Utter's local speech-to-text is powered by transcribe.cpp, Whisper, Parakeet, Silero VAD, and ggml."
         }
       }
-    },
-    "personalize": {
-      "ai": {
-        "title": "AI writing & voice"
-      },
-      "autoCleanup": {
-        "title": "Clean up every dictation",
-        "description": "Remove filler words, fix punctuation and apply your app styles on the main shortcut too, not just the post-processing one.",
-        "needsAi": "Turn on AI post-processing above and choose a provider first."
-      },
-      "contextAwareness": {
-        "title": "Screen-Aware Dictation & Vibe Coding",
-        "description": "Reads the active window title, text around your cursor, proper nouns, and open IDE filenames via Accessibility so names, code symbols, and mid-sentence spacing are 100% accurate."
-      },
-      "whisperMode": {
-        "title": "Whisper Mode (Quiet Voice Boost)",
-        "description": "Automatically amplify soft or whispered speech with soft-knee dynamic gain so you can dictate quietly in shared spaces or late at night."
-      },
-      "shortcuts": {
-        "title": "Commands and notes"
-      },
-      "styleCards": {
-        "heading": "Style",
-        "subheading": "Choose how Utter formats your speech across personal chats, work apps, email, and code.",
-        "tabPersonal": "Personal messages",
-        "tabWork": "Work messages",
-        "tabEmail": "Email",
-        "tabOther": "Other",
-        "appliesToApps": "Applies to:",
-        "formalTitle": "Formal.",
-        "formalSubtitle": "Complete sentences, proper capitalization & punctuation",
-        "casualTitle": "Casual",
-        "casualSubtitle": "Relaxed and friendly, no trailing period on short messages",
-        "veryCasualTitle": "very casual",
-        "veryCasualSubtitle": "Lowercase sentence starts, minimal punctuation",
-        "excitedTitle": "Excited!",
-        "excitedSubtitle": "Warm, energetic tone with natural exclamation marks",
-        "active": "Active",
-        "apply": "Use style",
-        "appliedToast": "Updated style for this category"
-      },
-      "appStyles": {
-        "title": "Styles per app",
-        "description": "Write differently depending on the app in front: casual in Slack, email in Mail, technical in VS Code. Uses AI cleanup.",
-        "empty": "No app styles yet. Add one below or load smart defaults.",
-        "appPlaceholder": "App name",
-        "addRecommended": "Load Smart App Defaults",
-        "detectApp": "Detect Current App",
-        "presetsAdded": "Added {{count}} app style rules",
-        "presetsAlreadyAdded": "Smart app defaults are already configured"
-      },
-      "snippets": {
-        "title": "Snippets",
-        "description": "Say a short cue and Utter types the full text: links, addresses, templates, sign-offs.",
-        "variablesHint": "Supports dynamic variables: {{date}}, {{time}}, {{day}}, {{datetime}}",
-        "addStarters": "Add Starter Snippets",
-        "startersAdded": "Added {{count}} starter snippets",
-        "startersAlreadyAdded": "Starter snippets are already in your library",
-        "triggerPlaceholder": "Say this…",
-        "expansionPlaceholder": "…to type this (e.g. Standup on {{date}})"
-      },
-      "dictionary": {
-        "title": "Dictionary",
-        "subtitle": "Add custom names, technical terms, or automatic misspelling replacement rules.",
-        "addWordLabel": "Add vocabulary word or phrase",
-        "addRuleLabel": "Add misspelling replacement rule",
-        "misspellingPlaceholder": "Misheard (e.g. whisper flow)",
-        "replacementPlaceholder": "Correct (e.g. Wispr Flow)",
-        "searchPlaceholder": "Search dictionary words and replacement rules…",
-        "empty": "No dictionary words match your search.",
-        "replacementBadge": "Replacement",
-        "packsLabel": "1-Click Domain Vocabulary Packs:",
-        "packEngineering": "Engineering & AI",
-        "packProduct": "Product & Design",
-        "packBusiness": "Business & Finance",
-        "packAdded": "Added {{count}} words to your dictionary",
-        "packAlreadyAdded": "All words in this pack are already in your dictionary"
-      },
-      "transforms": {
-        "title": "Transforms",
-        "subtitle": "One-click and automatic AI rewrites for dictation, coding prompts, and notes.",
-        "autoApplyAfterDictation": "Auto apply after dictation",
-        "polishTitle": "Polish",
-        "polishDesc": "Fixes grammar, removes filler words and false starts, and preserves your exact meaning.",
-        "promptEngineerTitle": "Prompt Engineer",
-        "promptEngineerDesc": "Turns messy spoken thoughts into a structured, high-signal prompt for Cursor, Claude, or ChatGPT.",
-        "conciseTitle": "Concise",
-        "conciseDesc": "Cuts redundant phrasing while keeping every key fact intact.",
-        "codeTitle": "Vibe Coding & Technical",
-        "codeDesc": "Preserves camelCase, snake_case, CLI flags, and wraps identifiers in backticks.",
-        "defaultTransformLabel": "Default dictation transform"
-      },
-      "remove": "Remove"
     }
   },
   "footer": {
@@ -1044,32 +928,33 @@
     "title": "New in Utter v{{version}}"
   },
   "common": {
-    "loading": "Loading...",
+    "loading": "Loading…",
     "delete": "Delete",
     "close": "Close",
     "open": "Open",
     "copy": "Copy",
     "clear": "Clear",
-    "refresh": "Refresh",
-    "noOptionsFound": "No options found"
+    "noOptionsFound": "No options found",
+    "cancel": "Cancel"
   },
   "errors": {
     "loadDirectory": "Error loading directory: {{error}}",
-    "micPermissionDeniedTitle": "Microphone Access Denied",
+    "micPermissionDeniedTitle": "Microphone access denied",
     "micPermissionDenied": {
       "generic": "Microphone access was denied by the operating system. Please grant microphone permission in your system settings.",
       "windows": "Enable microphone access in Settings → Privacy & security → Microphone (including desktop app access).",
       "macos": "Grant microphone access in System Settings → Privacy & Security → Microphone.",
       "linux": "Grant microphone access in your system's sound or privacy settings."
     },
-    "noInputDeviceTitle": "No Microphone Found",
+    "noInputDeviceTitle": "No microphone found",
     "noInputDevice": "No audio input device was detected. Please connect a microphone or headset and try again.",
     "recordingFailed": "Failed to start recording: {{error}}",
     "modelLoadFailed": "Failed to load model: {{model}}",
     "modelLoadFailedUnknown": "unknown model",
-    "pasteFailedTitle": "Failed to Paste Text",
+    "pasteFailedTitle": "Couldn't paste text",
     "pasteFailed": "Text could not be pasted into the active application.",
-    "transcriptionFailedTitle": "Transcription Failed"
+    "transcriptionFailedTitle": "Transcription failed",
+    "unknown": "Unknown error"
   },
   "appLanguage": {
     "title": "Application Language",
@@ -1089,9 +974,10 @@
     "processing": "Processing...",
     "loadingModel": "Loading model...",
     "modes": {
-      "flow": "Flow",
-      "ai": "AI",
-      "translate": "EN"
+      "translate": "EN",
+      "note": "Note",
+      "command": "Command",
+      "ai": "AI"
     }
   },
   "secureInput": {
@@ -1108,66 +994,54 @@
   "notes": {
     "ai": "AI",
     "record": "Record",
-    "recordMeeting": "Record Meeting / Note",
+    "recordMeeting": "Record",
     "stop": "Stop",
-    "liveStreamingHint": "Speaking in real-time. Action items, summary, and title will auto-generate.",
-    "listening": "Listening for speech…",
-    "startSpeakingHint": "Speak your ideas, discussion, or meeting notes. Live transcription will stream here.",
+    "liveStreamingHint": "Transcribing as you speak. A title, summary and action items are added when you stop.",
+    "listening": "Listening…",
+    "startSpeakingHint": "Start speaking. The transcript appears here as you talk.",
     "recordHint": "Or press {{shortcut}} from any app",
     "new": "New note",
     "searchPlaceholder": "Search notes",
     "empty": "No notes yet.",
     "noMatches": "No notes match.",
     "untitled": "Untitled note",
-    "introTitle": "Voice Notes & Meetings",
-    "introBody": "Press Record or {{shortcut}} to capture thoughts and meetings with automatic summaries.",
-    "introBodyNoShortcut": "Press Record to capture thoughts and meetings with automatic summaries.",
-    "introFeatures": {
-      "templates": "11 structured AI templates (Meeting, Standup, 1:1, Lecture, Interview, Action Items, TL;DR)",
-      "ask": "Ask your notes anything with cited answers across your entire knowledge base",
-      "actions": "Automatic action-item extraction and task tracking across all meetings",
-      "digest": "One-click Daily Digest combining today's dictations and voice notes"
-    },
+    "introTitle": "Notes",
+    "introBody": "Press Record, or {{shortcut}} from any app, to capture a thought or a meeting. Utter transcribes and summarizes it for you.",
+    "introBodyNoShortcut": "Press Record to capture a thought or a meeting. Utter transcribes and summarizes it for you.",
     "summarize": "Summarize",
     "resummarize": "Summarize again",
     "summarizing": "Summarizing…",
     "pin": "Pin note",
     "unpin": "Unpin note",
     "copy": "Copy note",
-    "copyMarkdown": "Copy as Markdown",
-    "copyFullMarkdown": "Copy Full Note (Markdown)",
-    "copySummaryOnly": "Copy Summary Only",
-    "copyActionItemsOnly": "Copy Action Items Only",
-    "exportMarkdownFile": "Save as .md File",
-    "printNote": "Print / Export to PDF",
-    "noteExported": "Note exported successfully",
+    "copyFullMarkdown": "Copy as Markdown",
+    "copySummaryOnly": "Copy summary",
+    "copyActionItemsOnly": "Copy action items",
+    "exportMarkdownFile": "Save as Markdown…",
+    "printNote": "Print or save as PDF",
+    "noteExported": "Note saved",
     "summaryCopied": "Summary copied",
     "actionsCopied": "Action items copied",
-    "importAudio": "Import Audio",
-    "importMedia": "Import Meeting (Video / Audio)",
-    "importingAudio": "Transcribing audio recording…",
-    "importingMedia": "Transcribing meeting video/audio…",
-    "importSuccess": "Meeting audio transcribed and summarized",
-    "importMediaSuccess": "Meeting transcribed & summarized with action items",
-    "audioFiles": "Audio Files",
-    "audioRecording": "Audio Recording",
-    "mediaFiles": "Audio & Video Recordings",
-    "videoPlayback": "Meeting Video Recording",
-    "videoFiles": "Video Files",
-    "startMeeting": "Record Meeting",
+    "importMedia": "Import audio or video",
+    "importingAudio": "Transcribing recording…",
+    "importingMedia": "Transcribing file…",
+    "importSuccess": "Recording transcribed and summarized",
+    "importMediaSuccess": "File transcribed and summarized",
+    "audioRecording": "Recording",
+    "mediaFiles": "Audio and video",
+    "videoPlayback": "Recording",
     "sourceVideo": "Video",
-    "sourceAudio": "Audio",
-    "tabSummary": "AI Summary & Minutes",
-    "tabTranscript": "Full Transcript",
+    "tabSummary": "Summary",
+    "tabTranscript": "Transcript",
     "copied": "Note copied",
     "delete": "Delete note",
     "bodyPlaceholder": "Type, or record to add a transcript…",
-    "aiRewriteLabel": "AI Transform:",
+    "aiRewriteLabel": "Rewrite",
     "transformActionItems": "Action Items",
     "transformTranslate": "Translate to English",
     "tabs": {
       "notes": "Notes",
-      "ask": "Ask Notes",
+      "ask": "Ask",
       "actions": "Action Items"
     },
     "filters": {
@@ -1181,20 +1055,20 @@
     },
     "templates": {
       "label": "Summary template",
-      "auto": "Auto Summary",
-      "meeting": "Meeting Notes",
-      "lecture": "Lecture Notes",
-      "interview": "Interview Debrief",
-      "one_on_one": "1:1 Meeting",
-      "standup": "Daily Standup",
+      "auto": "Automatic",
+      "meeting": "Meeting notes",
+      "lecture": "Lecture notes",
+      "interview": "Interview debrief",
+      "one_on_one": "1:1 meeting",
+      "standup": "Daily standup",
       "brainstorm": "Brainstorm",
-      "action_items": "Action Items Only",
-      "tldr": "TL;DR Brief",
-      "follow_up_email": "Follow-Up Email",
-      "journal": "Voice Journal"
+      "action_items": "Action items only",
+      "tldr": "TL;DR",
+      "follow_up_email": "Follow-up email",
+      "journal": "Journal"
     },
     "tags": {
-      "add": "+ tag",
+      "add": "Add tag",
       "remove": "Remove tag"
     },
     "markdown": {
@@ -1202,18 +1076,18 @@
       "transcript": "Transcript"
     },
     "digest": {
-      "button": "Daily Digest",
+      "button": "Daily digest",
       "working": "Creating digest…",
       "hint": "Summarize today's dictations and notes into a daily digest",
       "created": "Daily digest created"
     },
     "ask": {
-      "title": "Ask anything across your notes",
-      "description": "Utter searches your meeting transcripts, summaries, and voice notes to answer with direct citations.",
+      "title": "Ask your notes",
+      "description": "Answers come from your notes, with links to the notes they used.",
       "placeholder": "Ask a question about your notes…",
       "send": "Ask",
-      "thinking": "Searching and synthesizing notes…",
-      "sources": "Sources:",
+      "thinking": "Searching your notes…",
+      "sources": "Sources",
       "suggestions": {
         "actionItems": "What are my open action items?",
         "decisions": "What key decisions were made recently?",
@@ -1230,82 +1104,208 @@
       "openCount_other": "{{count}} open action items",
       "showDone": "Show completed",
       "empty": "No open action items across your notes.",
-      "emptyHint": "Action items extracted from your voice notes and meetings will appear here automatically.",
-      "allDone": "All caught up! Every action item is complete.",
-      "showDoneHint": "Turn on 'Show completed' above to see finished items.",
+      "emptyHint": "Action items found in your notes and meetings appear here.",
+      "allDone": "All caught up. Every action item is done.",
+      "showDoneHint": "Turn on “Show completed” to see finished items.",
       "complete": "Complete",
       "openStatus": "{{count}} open"
-    }
+    },
+    "discard": "Stop without saving",
+    "discardTitle": "Stop without saving a note?",
+    "discardConfirm": "Nothing will be added to Notes. The {{duration}} of audio stays on Home, where you can still transcribe it. To save it as a note, press Stop instead.",
+    "keepRecording": "Keep recording",
+    "speakers": {
+      "label": "Speakers:",
+      "renameHint": "Click a speaker to rename them.",
+      "rename": "Rename {{name}}",
+      "prompt": "Several people in this recording?",
+      "identify": "Identify speakers",
+      "identifyDownload": "Identify speakers ({{size}} MB download)",
+      "downloading": "Downloading the speaker model…",
+      "running": "Identifying speakers… {{percent}}%",
+      "found_one": "Found {{count}} speaker",
+      "found_other": "Found {{count}} speakers",
+      "single": "Only one speaker was found, so the note was left as it was.",
+      "failed": "Couldn’t identify speakers",
+      "downloadFailed": "Couldn’t download the speaker model"
+    },
+    "retranscribe": "Transcribe again",
+    "retranscribing": "Transcribing the recording again…",
+    "retranscribed": "Transcribed again and re-summarized"
   },
   "flow": {
-    "welcomeBack": "Welcome back",
-    "appsPill": "apps",
-    "holdToDictateHeading": "Dictate anywhere with {{shortcut}}",
-    "holdToDictateBody": "Press and hold your shortcut in any text box to type with your voice.",
-    "screenAwarePill": "Screen-Aware",
-    "contextMemory": "Session Memory",
-    "contextMemoryActive": "Remembering conversation context across dictations",
-    "clearContextMemory": "Clear context memory",
-    "contextMemoryCleared": "Conversation context cleared",
-    "screenContextLabel": "Screen context",
-    "anyFocusedApp": "Any focused app",
-    "recentDictationsTitle": "Dictation history",
-    "todaysDictations": "Today's dictations",
-    "yesterdaysDictations": "Yesterday's dictations",
-    "emptyFeedSubtitle": "Hold your dictation shortcut in any app and speak naturally.",
-    "heroTitle": "Utter",
-    "heroSubtitle": "Speak naturally in any app to type faster.",
-    "aiCleanupPill": "AI Cleanup",
-    "whisperModePill": "Whisper Mode",
-    "shortcutDictate": "Dictate",
-    "shortcutCommand": "Command Mode",
-    "shortcutNote": "Voice Note",
-    "scratchpadTitle": "Interactive Flow Scratchpad & AI Studio",
-    "scratchpadDescription": "Press your dictation shortcut to speak right here, or paste text to test AI rewrites, spoken snippets, and custom commands.",
-    "scratchpadPlaceholder": "Hold your dictation shortcut and speak here, or type text to transform with AI…",
-    "customCommandPlaceholder": "Custom AI command (e.g. 'Translate to Spanish', 'Summarize in 3 bullets', 'Make friendlier')…",
-    "runCommand": "Transform",
-    "transforming": "Running…",
     "saveAsNote": "Save to Notes",
-    "savedToNotes": "Saved to Utter Notes",
+    "savedToNotes": "Saved to Notes",
     "transforms": {
-      "cleanUp": "Clean Up",
+      "cleanUp": "Clean up",
       "concise": "Concise",
-      "formal": "Formal",
-      "casual": "Casual",
       "email": "Email",
-      "bullets": "Bullet List",
-      "code": "Code & Tech",
-      "snippets": "Expand Snippets",
-      "promptEngineer": "Prompt Engineer"
+      "bullets": "Bullet list"
     }
   },
   "stats": {
-    "loading": "Loading stats…",
     "totalWords": "Words dictated",
-    "timeSaved": "Time saved",
-    "timeSavedHint": "vs. typing at 40 WPM",
     "speed": "Speaking speed",
-    "speedHint": "average",
     "wpm": "{{count}} WPM",
     "wpm_one": "{{count}} WPM",
     "wpm_other": "{{count}} WPM",
-    "today": "Today",
-    "week": "Last 7 days",
     "streak": "Streak",
     "days": "{{count}} days",
     "days_one": "{{count}} day",
-    "days_other": "{{count}} days",
-    "dictations_one": "{{count}} dictation in all",
-    "dictations_other": "{{count}} dictations in all",
-    "minutes_one": "{{count}} min",
-    "minutes_other": "{{count}} min",
-    "hours_one": "{{count}} hr",
-    "hours_other": "{{count}} hr",
-    "dailyTitle": "Words per day",
-    "dayTooltip": "{{day}}: {{words}} words",
-    "todayShort": "Today",
-    "appsTitle": "Top apps",
-    "noApps": "Dictate into a few apps to see where you use Utter most."
+    "days_other": "{{count}} days"
+  },
+  "home": {
+    "title": "Dictate in any app",
+    "body": "Click into any text field, press <kbd>{{shortcut}}</kbd> and speak. Your words are typed where the cursor is.",
+    "bodyNoShortcut": "Set a dictation shortcut below to get started.",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "cancelledRecording": "Cancelled recording",
+    "cancelledHint": "You cancelled this recording, so it wasn’t typed anywhere. The audio is kept here in case you need it.",
+    "transcribeNow": "Transcribe",
+    "playRecording": "Play recording",
+    "hideRecording": "Hide recording",
+    "deleted": "Dictation deleted",
+    "undo": "Undo"
+  },
+  "app": {
+    "loading": "Loading…"
+  },
+  "toasts": {
+    "recordingKept": {
+      "title": "Recording cancelled",
+      "description": "Nothing was typed. The audio is saved on Home if you want to transcribe it.",
+      "action": "Show"
+    },
+    "noteSaved": {
+      "title": "Saved to Notes",
+      "action": "Open"
+    }
+  },
+  "personalize": {
+    "tabs": {
+      "smart": "Smart",
+      "dictionary": "Dictionary",
+      "snippets": "Snippets",
+      "styles": "Styles"
+    },
+    "intro": {
+      "smart": "What Utter does to your words between speaking and typing.",
+      "dictionary": "Names, terms and spellings Utter should get right. Add “misspelling -> correct” to fix a word the model keeps getting wrong.",
+      "snippets": "Say a short phrase and Utter types the full text: an address, a sign-off, a meeting link.",
+      "styles": "Write differently in each app: casual in chat, formal in email, precise in your code editor."
+    },
+    "engine": {
+      "providerHint": "Sent to this provider to be processed.",
+      "apple": "Apple Intelligence",
+      "appleHint": "On your Mac. Nothing leaves your computer.",
+      "builtin": "Built-in rules",
+      "builtinHint": "Basic rules only: no real AI. Set up a provider, or open Ollama, for proper summaries.",
+      "setUp": "Set up AI",
+      "change": "Change",
+      "task": {
+        "cleanup": "Dictation cleanup",
+        "notes": "Notes and summaries"
+      },
+      "local": "Ollama · {{model}}",
+      "localHint": "On your Mac, offline. Nothing leaves your computer.",
+      "ollamaStopped": "Ollama is installed but not running. Open it and Utter will use it for summaries, Ask and rewrites — privately, on your Mac."
+    },
+    "smart": {
+      "title": "While you dictate",
+      "cleanup": {
+        "label": "Clean up with AI",
+        "description": "Fixes punctuation, capitalization and grammar, and applies your style for the app you’re in."
+      },
+      "fillers": {
+        "label": "Remove filler words",
+        "description": "Drops “um”, “uh” and similar so your text reads cleanly."
+      },
+      "context": {
+        "label": "Use what’s on screen",
+        "description": "Reads the app and text around your cursor to match names, casing and spacing."
+      },
+      "voiceCommands": {
+        "label": "Voice commands",
+        "description": "Understands spoken formatting and corrections, like “new line” or “scratch that”."
+      },
+      "whisper": {
+        "label": "Whisper mode",
+        "description": "Boosts quiet speech so you can dictate softly in shared spaces."
+      }
+    },
+    "say": {
+      "title": "What you can say",
+      "description": "Works while Voice commands is on.",
+      "commands": {
+        "newLine": {
+          "phrase": "new line",
+          "result": "Starts a new line"
+        },
+        "newParagraph": {
+          "phrase": "new paragraph",
+          "result": "Leaves a blank line"
+        },
+        "bullet": {
+          "phrase": "bullet point milk",
+          "result": "Starts a list item: - milk"
+        },
+        "scratchThat": {
+          "phrase": "scratch that",
+          "result": "Deletes the last sentence you said"
+        },
+        "noWait": {
+          "phrase": "Tuesday, no wait, Wednesday",
+          "result": "Keeps only the correction: Wednesday"
+        },
+        "pressEnter": {
+          "phrase": "… press enter",
+          "result": "Types your text, then sends it"
+        },
+        "allCaps": {
+          "phrase": "all caps urgent",
+          "result": "URGENT"
+        },
+        "hashtag": {
+          "phrase": "hashtag launch",
+          "result": "#launch"
+        },
+        "camelCase": {
+          "phrase": "camel case user id",
+          "result": "userId (also snake case, constant case)"
+        },
+        "emoji": {
+          "phrase": "rocket emoji",
+          "result": "🚀"
+        },
+        "search": {
+          "phrase": "search the web for …",
+          "result": "Opens a search instead of typing"
+        }
+      }
+    },
+    "snippets": {
+      "trigger": "When I say",
+      "triggerPlaceholder": "my address",
+      "expansion": "Type this",
+      "expansionPlaceholder": "221B Baker Street, London",
+      "variables": "You can use {{variables}}",
+      "duplicate": "You already have a snippet for “{{trigger}}”.",
+      "add": "Add snippet",
+      "update": "Save changes",
+      "edit": "Edit snippet",
+      "empty": "No snippets yet."
+    },
+    "styles": {
+      "app": "In this app",
+      "appPlaceholder": "Slack",
+      "style": "Write like",
+      "stylePlaceholder": "Choose a style",
+      "add": "Add",
+      "suggested": "Your apps:",
+      "duplicate": "{{app}} already has a style.",
+      "empty": "No app styles yet. Everywhere else uses your default cleanup.",
+      "needsCleanup": "Styles only apply while “Clean up with AI” is on (Smart tab)."
+    }
   }
 }

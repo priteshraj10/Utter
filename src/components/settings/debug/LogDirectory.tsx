@@ -10,7 +10,7 @@ interface LogDirectoryProps {
 }
 
 export const LogDirectory: React.FC<LogDirectoryProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

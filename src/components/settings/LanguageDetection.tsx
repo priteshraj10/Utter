@@ -13,7 +13,7 @@ interface LanguageDetectionProps {
 
 /** Use the language detector for every model, so Auto only picks from their languages. */
 export const LanguageDetection: React.FC<LanguageDetectionProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

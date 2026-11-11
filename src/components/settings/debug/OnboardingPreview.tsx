@@ -17,7 +17,7 @@ interface OnboardingPreviewProps {
 /** Opens onboarding at any screen, inert, to look at it. */
 export const OnboardingPreview: React.FC<OnboardingPreviewProps> = ({
   onPreview,
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();
@@ -57,7 +57,7 @@ interface DebugRunProps {
 export const DebugRun: React.FC<DebugRunProps> = ({
   run,
   onRun,
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

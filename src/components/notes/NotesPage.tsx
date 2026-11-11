@@ -8,7 +8,7 @@ import React, {
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { ask, open, save } from "@tauri-apps/plugin-dialog";
 import { readFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import {
   CalendarDays,
@@ -36,6 +36,7 @@ import {
   Video,
   Wand2,
   X,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { commands, events, type Note } from "@/bindings";
@@ -49,6 +50,7 @@ import { MarkdownContent } from "../whats-new/MarkdownContent";
 import { copyToClipboard } from "../settings/history/clipboard";
 import { AskNotesPanel } from "./AskNotesPanel";
 import { ActionItemsPanel } from "./ActionItemsPanel";
+import { SpeakersPanel } from "./SpeakersPanel";
 import {
   Tabs,
   TabsList,
@@ -74,6 +76,22 @@ import {
 
 /** Backend event emitted whenever a note is created, edited or deleted. */
 const NOTES_CHANGED_EVENT = "notes-changed";
+
+/** Rewrites offered for a note's transcript: [prompt id or instruction, label key]. */
+const REWRITES = [
+  ["default_improve_transcriptions", "flow.transforms.cleanUp"],
+  ["style_concise", "flow.transforms.concise"],
+  ["style_bullets", "flow.transforms.bullets"],
+  ["style_email", "flow.transforms.email"],
+  [
+    "Turn into a checklist of action items with '- [ ] '",
+    "notes.transformActionItems",
+  ],
+  [
+    "Translate into English, keeping the formatting",
+    "notes.transformTranslate",
+  ],
+] as const;
 
 type Tab = "notes" | "ask" | "actions";
 type ViewMode = "both" | "summary" | "transcript";
@@ -240,6 +258,27 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
       unlisten.then((fn) => fn());
     };
   }, []);
+
+  // Discarding throws the audio away for good, so anything longer than a few
+  // seconds asks first. Stop is the button that saves.
+  const discardRecording = useCallback(async () => {
+    const seconds = recordStart ? (Date.now() - recordStart) / 1000 : 0;
+    if (seconds > 10) {
+      const confirmed = await ask(
+        t("notes.discardConfirm", {
+          duration: formatDuration(seconds),
+        }),
+        {
+          title: t("notes.discardTitle"),
+          kind: "warning",
+          okLabel: t("notes.discard"),
+          cancelLabel: t("notes.keepRecording"),
+        },
+      );
+      if (!confirmed) return;
+    }
+    await commands.cancelOperation();
+  }, [recordStart, t]);
 
   const [liveStreamText, setLiveStreamText] = useState("");
   const lastLoadedIdRef = useRef<number | null>(null);
@@ -569,15 +608,41 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     }
   };
 
+  // Re-runs the speech model on the recording, e.g. after a wrong-language
+  // transcript; the new text and summary arrive via notes-changed.
+  const retranscribe = async () => {
+    if (!selected) return;
+    await flushSave();
+    const id = selected.id;
+    toast.promise(
+      commands.retranscribeNote(id).then((res) => {
+        if (res.status !== "ok") throw new Error(res.error);
+      }),
+      {
+        loading: t("notes.retranscribing"),
+        success: t("notes.retranscribed"),
+        error: (e) => String(e?.message ?? e),
+      },
+    );
+  };
+
   const printNote = () => {
     if (!draft || !selected) return;
     const printWindow = window.open("", "_blank");
-    const title = draft.title || t("notes.untitled");
+    // Note text is the user's: escape it, or a "<" or "&" breaks the page.
+    const html = (text: string) =>
+      text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/\n/g, "<br/>");
+    const title = html(draft.title || t("notes.untitled"));
     const summaryHtml = selected.summary
-      ? `<div style="margin-bottom:24px;"><h2>${t("notes.tabSummary")}</h2><div>${selected.summary.replace(/\n/g, "<br/>")}</div></div>`
+      ? `<div style="margin-bottom:24px;"><h2>${html(t("notes.tabSummary"))}</h2><div>${html(selected.summary)}</div></div>`
       : "";
     const bodyHtml = draft.body
-      ? `<div style="margin-bottom:24px;"><h2>${t("notes.tabTranscript")}</h2><div>${draft.body.replace(/\n/g, "<br/>")}</div></div>`
+      ? `<div style="margin-bottom:24px;"><h2>${html(t("notes.tabTranscript"))}</h2><div>${html(draft.body)}</div></div>`
       : "";
 
     if (printWindow) {
@@ -597,7 +662,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
           <body>
             <h1>${title}</h1>
             <div class="meta">
-              ${selected.tags.map((tg) => `<span class="tag">#${tg}</span>`).join(" ")}
+              ${selected.tags.map((tg) => `<span class="tag">#${html(tg)}</span>`).join(" ")}
               <span>${formatDateTime(String(selected.updated_at), i18n.language)}</span>
             </div>
             ${summaryHtml}
@@ -675,7 +740,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
             {importingAudio ? (
               <Loader2 size={13} className="animate-spin text-logo-primary" />
             ) : (
-              <Video size={13} className="text-purple-400" />
+              <Video size={13} className="text-muted-foreground" />
             )}
             <span className="text-xs font-medium">
               {importingAudio
@@ -695,7 +760,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
             {digesting ? (
               <Loader2 size={13} className="animate-spin text-logo-primary" />
             ) : (
-              <CalendarDays size={13} className="text-teal-600" />
+              <CalendarDays size={13} className="text-muted-foreground" />
             )}
             <span className="text-xs font-medium">
               {digesting ? t("notes.digest.working") : t("notes.digest.button")}
@@ -940,8 +1005,9 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                       variant="secondary"
                       size="sm"
                       className="rounded-xl px-2.5 py-1"
-                      onClick={() => commands.cancelOperation()}
-                      title={t("common.cancel")}
+                      onClick={discardRecording}
+                      title={t("notes.discard")}
+                      aria-label={t("notes.discard")}
                     >
                       <X size={13} />
                     </Button>
@@ -1014,7 +1080,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                     disabled={importingAudio}
                     title={t("notes.importMedia")}
                   >
-                    <Video size={13} className="text-purple-400" />
+                    <Video size={13} className="text-muted-foreground" />
                     <span>{t("notes.importMedia")}</span>
                   </Button>
                 </div>
@@ -1098,20 +1164,32 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                         onClick={copySummaryOnly}
                         disabled={!selected.summary}
                       >
-                        <Sparkles size={13} className="text-purple-400" />
+                        <Sparkles size={13} className="text-muted-foreground" />
                         <span>{t("notes.copySummaryOnly")}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={copyActionItemsOnly}>
-                        <ListTodo size={13} className="text-emerald-400" />
+                        <ListTodo size={13} className="text-muted-foreground" />
                         <span>{t("notes.copyActionItemsOnly")}</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={exportMarkdownFile}>
-                        <FileDown size={13} className="text-cyan-400" />
+                        <FileDown size={13} className="text-muted-foreground" />
                         <span>{t("notes.exportMarkdownFile")}</span>
                       </DropdownMenuItem>
+                      {selected.audio_file && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={retranscribe}>
+                            <RotateCcw
+                              size={13}
+                              className="text-muted-foreground"
+                            />
+                            <span>{t("notes.retranscribe")}</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       <DropdownMenuItem onClick={printNote}>
-                        <Printer size={13} className="text-amber-500" />
+                        <Printer size={13} className="text-muted-foreground" />
                         <span>{t("notes.printNote")}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -1170,6 +1248,17 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   </div>
                 )}
 
+                <SpeakersPanel
+                  note={selected}
+                  body={draft.body}
+                  onRename={(body, summary) => {
+                    edit({ body });
+                    if (summary !== selected.summary) {
+                      void commands.updateNoteSummary(selected.id, summary);
+                    }
+                  }}
+                />
+
                 {/* Summary & Template Controls */}
                 <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-line">
                   <Sparkles size={13} className="text-logo-primary" />
@@ -1201,6 +1290,33 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                         ? t("notes.resummarize")
                         : t("notes.summarize")}
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={transforming || !draft.body.trim()}
+                      >
+                        {transforming ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <Wand2 size={13} />
+                        )}
+                        {t("notes.aiRewriteLabel")}
+                        <ChevronDown size={11} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52">
+                      {REWRITES.map(([inst, labelKey]) => (
+                        <DropdownMenuItem
+                          key={labelKey}
+                          onClick={() => transformBody(inst)}
+                        >
+                          {t(labelKey)}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <div className="flex-1" />
                   <div className="flex flex-wrap items-center gap-1">
                     <Tag size={12} className="text-ink-3" />
@@ -1237,53 +1353,10 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   </div>
                 </div>
 
-                {/* AI quick transforms */}
-                <div className="flex flex-wrap items-center gap-1.5 px-4 py-1.5 border-b border-line bg-surface-1/50">
-                  <span className="text-[11px] font-medium text-ink-3 flex items-center gap-1 mr-1">
-                    <Wand2 size={11} className="text-logo-primary" />
-                    {t("notes.aiRewriteLabel")}
-                  </span>
-                  {(
-                    [
-                      [
-                        "default_improve_transcriptions",
-                        "flow.transforms.cleanUp",
-                      ],
-                      ["style_concise", "flow.transforms.concise"],
-                      ["style_bullets", "flow.transforms.bullets"],
-                      ["style_email", "flow.transforms.email"],
-                      [
-                        "Turn into a checklist of action items with '- [ ] '",
-                        "notes.transformActionItems",
-                      ],
-                      [
-                        "Translate into English, keeping the formatting",
-                        "notes.transformTranslate",
-                      ],
-                    ] as const
-                  ).map(([inst, labelKey]) => (
-                    <button
-                      key={labelKey}
-                      type="button"
-                      disabled={transforming || !draft.body.trim()}
-                      onClick={() => transformBody(inst)}
-                      className="px-2 py-0.5 rounded-md text-xs border border-line bg-surface hover:border-logo-primary disabled:opacity-40 cursor-pointer transition-colors"
-                    >
-                      {t(labelKey)}
-                    </button>
-                  ))}
-                  {transforming && (
-                    <Loader2
-                      size={12}
-                      className="animate-spin text-logo-primary"
-                    />
-                  )}
-                </div>
-
                 {/* Content Workspace: Split or Single View */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {viewMode !== "transcript" && selected.summary && (
-                    <Card className="rounded-xl bg-gradient-to-br from-logo-primary/10 via-surface to-surface border border-logo-primary/25 p-4 text-sm space-y-2.5 shadow-2xs">
+                    <Card className="rounded-xl bg-primary/5 border border-primary/20 p-4 text-sm space-y-2.5 shadow-none">
                       <div className="flex items-center justify-between">
                         <Badge
                           variant="brand"

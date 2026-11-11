@@ -11,7 +11,7 @@ interface ShortcutActivationProps {
 }
 
 export const ShortcutActivationSetting: React.FC<ShortcutActivationProps> =
-  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+  React.memo(({ descriptionMode = "inline", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 

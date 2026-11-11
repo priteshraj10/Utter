@@ -15,6 +15,7 @@ import {
   FilePlus,
   FolderOpen,
   NotebookPen,
+  Play,
   RotateCcw,
   Search,
   Sparkles,
@@ -36,7 +37,7 @@ import {
   useTranscriptionJobsStore,
   type ActiveJobStatus,
 } from "@/stores/transcriptionJobsStore";
-import { formatDateTime } from "@/utils/dateFormat";
+import { cn } from "@/lib/utils/cn";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 import { copyToClipboard } from "./clipboard";
@@ -50,20 +51,71 @@ const IconButton: React.FC<{
   children: React.ReactNode;
 }> = ({ onClick, title, disabled, active, children }) => (
   <button
+    type="button"
     onClick={onClick}
     disabled={disabled}
-    className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20 ${
-      active
-        ? "text-logo-primary hover:text-logo-primary"
-        : "text-ink-3 hover:text-logo-primary"
-    }`}
     title={title}
+    aria-label={title}
+    className={cn(
+      "grid size-7 place-items-center rounded-md transition-colors cursor-pointer",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+      "disabled:pointer-events-none disabled:opacity-35",
+      active
+        ? "text-primary"
+        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+    )}
   >
     {children}
   </button>
 );
 
+/** Recordings kept by Cancel are named `cancelled-<timestamp>.wav` (utils.rs). */
+const isCancelledRecording = (entry: HistoryEntry) =>
+  entry.file_name.startsWith("cancelled-");
+
+const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+/** Groups entries (newest first) into days, labelled Today, Yesterday, or a date. */
+const groupByDay = (
+  entries: HistoryEntry[],
+  locale: string,
+  labels: { today: string; yesterday: string },
+) => {
+  const today = startOfDay(new Date());
+  const yesterday = today - 24 * 60 * 60 * 1000;
+  const groups: { key: number; label: string; entries: HistoryEntry[] }[] = [];
+  for (const entry of entries) {
+    const date = new Date(entry.timestamp * 1000);
+    const key = startOfDay(date);
+    let group = groups[groups.length - 1];
+    if (!group || group.key !== key) {
+      const label =
+        key === today
+          ? labels.today
+          : key === yesterday
+            ? labels.yesterday
+            : new Intl.DateTimeFormat(locale, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year:
+                  date.getFullYear() === new Date().getFullYear()
+                    ? undefined
+                    : "numeric",
+              }).format(date);
+      group = { key, label, entries: [] };
+      groups.push(group);
+    }
+    group.entries.push(entry);
+  }
+  return groups;
+};
+
 const PAGE_SIZE = 30;
+
+/** How long a deleted entry can be brought back before it is removed. */
+const DELETE_UNDO_MS = 5000;
 
 // Long text folds to this many lines until "Show more".
 const FOLDED_LINES = 4;
@@ -79,20 +131,14 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
   label,
   icon: Icon,
 }) => (
-  <Button
-    onClick={onClick}
-    variant="secondary"
-    size="sm"
-    className="flex items-center gap-2"
-    title={label}
-  >
-    <Icon className="w-4 h-4" />
+  <Button onClick={onClick} variant="ghost" size="sm" title={label}>
+    <Icon className="size-3.5" />
     <span>{label}</span>
   </Button>
 );
 
 export const HistorySettings: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const osType = useOsType();
   const jobs = useTranscriptionJobsStore((state) => state.jobs);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
@@ -257,19 +303,37 @@ export const HistorySettings: React.FC = () => {
     [osType],
   );
 
+  // Deleting removes the audio for good, so it waits a few seconds behind an
+  // Undo; the entry only disappears from view meanwhile.
   const deleteAudioEntry = async (id: number) => {
-    // Optimistically remove
+    const removed = entriesRef.current.find((e) => e.id === id);
     setEntries((prev) => prev.filter((e) => e.id !== id));
-    try {
-      const result = await commands.deleteHistoryEntry(id);
-      if (result.status !== "ok") {
-        // Reload on failure
+    let undone = false;
+    const timer = window.setTimeout(async () => {
+      if (undone) return;
+      try {
+        const result = await commands.deleteHistoryEntry(id);
+        if (result.status !== "ok") loadPage();
+      } catch (error) {
+        console.error("Failed to delete entry:", error);
         loadPage();
       }
-    } catch (error) {
-      console.error("Failed to delete entry:", error);
-      loadPage();
-    }
+    }, DELETE_UNDO_MS);
+    toast(t("home.deleted"), {
+      duration: DELETE_UNDO_MS,
+      action: {
+        label: t("home.undo"),
+        onClick: () => {
+          undone = true;
+          window.clearTimeout(timer);
+          if (removed) {
+            setEntries((prev) =>
+              [...prev, removed].sort((x, y) => y.timestamp - x.timestamp),
+            );
+          }
+        },
+      },
+    });
   };
 
   const transcribeFile = async () => {
@@ -294,91 +358,87 @@ export const HistorySettings: React.FC = () => {
 
   let content: React.ReactNode;
   const visibleEntries = searchResults ?? entries;
+  const message = (text: string) => (
+    <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+      {text}
+    </p>
+  );
 
   if (searchResults && searchResults.length === 0) {
-    content = (
-      <div className="px-4 py-3 text-center text-ink-2">
-        {t("settings.history.noMatches", { query: query.trim() })}
-      </div>
-    );
+    content = message(t("settings.history.noMatches", { query: query.trim() }));
   } else if (loading) {
-    content = (
-      <div className="px-4 py-3 text-center text-ink-2">
-        {t("settings.history.loading")}
-      </div>
-    );
+    content = message(t("settings.history.loading"));
   } else if (entries.length === 0) {
-    content = (
-      <div className="px-4 py-3 text-center text-ink-2">
-        {t("settings.history.empty")}
-      </div>
-    );
+    content = message(t("settings.history.empty"));
   } else {
+    const groups = groupByDay(visibleEntries, i18n.language, {
+      today: t("home.today"),
+      yesterday: t("home.yesterday"),
+    });
     content = (
-      <>
-        <AudioPlayerGroup>
-          <div className="divide-y divide-line">
-            {visibleEntries.map((entry) => (
-              <HistoryEntryComponent
-                key={entry.id}
-                entry={entry}
-                job={jobs[entry.id]}
-                onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() =>
-                  copyToClipboard(
-                    entry.post_processed_text || entry.transcription_text,
-                  )
-                }
-                getAudioUrl={getAudioUrl}
-                deleteAudio={deleteAudioEntry}
-                retryTranscription={commands.retryHistoryEntryTranscription}
-                cancelTranscription={commands.cancelHistoryEntryTranscription}
-              />
-            ))}
-          </div>
-        </AudioPlayerGroup>
+      <AudioPlayerGroup>
+        <div className="space-y-6">
+          {groups.map((group) => (
+            <section key={group.key} className="space-y-2">
+              <h3 className="px-1 text-xs font-medium text-muted-foreground">
+                {group.label}
+              </h3>
+              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+                {group.entries.map((entry) => (
+                  <HistoryEntryComponent
+                    key={entry.id}
+                    entry={entry}
+                    job={jobs[entry.id]}
+                    onToggleSaved={() => toggleSaved(entry.id)}
+                    onCopyText={() =>
+                      copyToClipboard(
+                        entry.post_processed_text || entry.transcription_text,
+                      )
+                    }
+                    getAudioUrl={getAudioUrl}
+                    deleteAudio={deleteAudioEntry}
+                    retryTranscription={commands.retryHistoryEntryTranscription}
+                    cancelTranscription={
+                      commands.cancelHistoryEntryTranscription
+                    }
+                  />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
         {/* Sentinel for infinite scroll */}
         {!searchResults && <div ref={sentinelRef} className="h-1" />}
-      </>
+      </AudioPlayerGroup>
     );
   }
 
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-6">
-      <div className="space-y-2">
-        <div className="px-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xs font-medium text-ink-3 uppercase tracking-wide">
-              {t("settings.history.title")}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <HeaderButton
-              onClick={transcribeFile}
-              label={t("settings.history.transcribeFile")}
-              icon={FilePlus}
-            />
-            <HeaderButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-              icon={FolderOpen}
-            />
-          </div>
-        </div>
-        <label className="mx-4 flex items-center gap-2 px-3 py-2 rounded-lg border border-line bg-background focus-within:border-logo-primary">
-          <Search size={16} className="text-ink-3 shrink-0" />
+    <div className="max-w-3xl w-full mx-auto space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex h-9 min-w-48 flex-1 items-center gap-2 rounded-lg border border-input bg-background px-3 shadow-xs focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25">
+          <Search size={15} className="shrink-0 text-muted-foreground" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("settings.history.searchPlaceholder")}
-            className="w-full bg-transparent text-sm outline-none"
+            aria-label={t("settings.history.searchPlaceholder")}
+            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </label>
-        <div className="bg-background border border-line rounded-lg overflow-visible">
-          {content}
-        </div>
+        <HeaderButton
+          onClick={transcribeFile}
+          label={t("settings.history.transcribeFile")}
+          icon={FilePlus}
+        />
+        <HeaderButton
+          onClick={openRecordingsFolder}
+          label={t("settings.history.openFolder")}
+          icon={FolderOpen}
+        />
       </div>
+      {content}
     </div>
   );
 };
@@ -414,6 +474,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const [showRaw, setShowRaw] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState("");
+  const [showAudio, setShowAudio] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
 
   const displayedText =
@@ -511,7 +572,14 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
   };
 
-  const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
+  const time = new Intl.DateTimeFormat(i18n.language, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(entry.timestamp * 1000));
+  const cancelled = isCancelledRecording(entry);
+  const sourceLabel = cancelled
+    ? t("home.cancelledRecording")
+    : entry.source_name;
 
   let progressText = t("settings.history.transcribing");
   if (job?.state === "queued") {
@@ -523,143 +591,89 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   }
 
   return (
-    <div className="px-4 py-2 pb-5 flex flex-col gap-3">
-      <div className="flex justify-between items-center gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <p className="text-sm font-medium shrink-0">{formattedDate}</p>
-          {entry.post_processed_text && (
-            <button
-              type="button"
-              onClick={() => setShowRaw(!showRaw)}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-logo-primary/15 text-logo-primary hover:bg-logo-primary/25 cursor-pointer"
-              title={t("settings.history.toggleRawHint")}
-            >
-              <Sparkles size={11} />
-              {showRaw
-                ? t("settings.history.rawBadge")
-                : t("settings.history.aiCleanedBadge")}
-            </button>
-          )}
-          {entry.source_name && (
-            <span
-              className="flex items-center gap-1 min-w-0 text-sm text-ink-3"
-              title={entry.source_name}
-            >
-              <FileAudio width={14} height={14} className="shrink-0" />
-              <span className="truncate">{entry.source_name}</span>
-            </span>
-          )}
-        </div>
-        <div className="flex items-center shrink-0">
-          <IconButton
-            onClick={handleToggleEdit}
-            disabled={!hasTranscription || retrying}
-            active={editing}
-            title={t("settings.history.editAndLearn")}
-          >
-            <BookOpen width={16} height={16} />
-          </IconButton>
-          <IconButton
-            onClick={handleSaveToNotes}
-            disabled={!hasTranscription || retrying}
-            title={t("flow.saveAsNote")}
-          >
-            <NotebookPen width={16} height={16} />
-          </IconButton>
-          <IconButton
-            onClick={handleCopyText}
-            disabled={!hasTranscription || retrying}
-            title={t("settings.history.copyToClipboard")}
-          >
-            {showCopied ? (
-              <Check width={16} height={16} />
-            ) : (
-              <Copy width={16} height={16} />
-            )}
-          </IconButton>
-          <IconButton
-            onClick={onToggleSaved}
-            active={entry.saved}
-            title={
-              entry.saved
-                ? t("settings.history.unsave")
-                : t("settings.history.save")
-            }
-          >
-            <Star
-              width={16}
-              height={16}
-              fill={entry.saved ? "currentColor" : "none"}
-            />
-          </IconButton>
-          {retrying ? (
-            <IconButton
-              onClick={() => {
-                setCancelling(true);
-                void cancelTranscription(entry.id);
-              }}
-              disabled={cancelling}
-              title={t("settings.history.cancelTranscription")}
-            >
-              <X width={16} height={16} />
-            </IconButton>
-          ) : (
-            <IconButton
-              onClick={() => retryTranscription(entry.id)}
-              title={t("settings.history.retranscribe")}
-            >
-              <RotateCcw width={16} height={16} />
-            </IconButton>
-          )}
-          <IconButton
-            onClick={handleDeleteEntry}
-            title={t("settings.history.delete")}
-          >
-            <Trash2 width={16} height={16} />
-          </IconButton>
-        </div>
-      </div>
+    <li className="group relative grid grid-cols-[4.5rem_1fr] gap-3 px-4 py-3 transition-colors hover:bg-accent/40 focus-within:bg-accent/40">
+      <time
+        dateTime={new Date(entry.timestamp * 1000).toISOString()}
+        className="pt-0.5 text-xs tabular-nums text-muted-foreground"
+      >
+        {time}
+      </time>
 
-      {editing ? (
-        <div className="space-y-2 pb-2">
-          <textarea
-            value={editDraft}
-            onChange={(e) => setEditDraft(e.target.value)}
-            className="w-full min-h-[72px] rounded-lg border border-line bg-background p-2.5 text-sm outline-none focus:border-logo-primary"
-          />
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-ink-3">
-              {t("settings.history.learnWordsHint")}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setEditing(false)}
+      <div className="min-w-0 space-y-2 pe-1">
+        {(entry.post_processed_text || sourceLabel || entry.saved) && (
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
+            {entry.saved && (
+              <Star
+                size={12}
+                className="text-primary"
+                fill="currentColor"
+                aria-label={t("settings.history.save")}
+              />
+            )}
+            {sourceLabel && (
+              <span
+                className="flex min-w-0 items-center gap-1 text-muted-foreground"
+                title={sourceLabel}
               >
-                {t("common.close")}
-              </Button>
-              <Button variant="primary" size="sm" onClick={handleLearnWords}>
-                {t("settings.history.learnAndCopy")}
-              </Button>
+                <FileAudio size={12} className="shrink-0" />
+                <span className="truncate">{sourceLabel}</span>
+              </span>
+            )}
+            {entry.post_processed_text && (
+              <button
+                type="button"
+                onClick={() => setShowRaw(!showRaw)}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary hover:bg-primary/15 cursor-pointer"
+                title={t("settings.history.toggleRawHint")}
+              >
+                <Sparkles size={11} />
+                {showRaw
+                  ? t("settings.history.rawBadge")
+                  : t("settings.history.aiCleanedBadge")}
+              </button>
+            )}
+          </div>
+        )}
+
+        {editing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editDraft}
+              onChange={(e) => setEditDraft(e.target.value)}
+              className="w-full min-h-20 rounded-lg border border-input bg-background p-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25"
+            />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("settings.history.learnWordsHint")}
+              </span>
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditing(false)}
+                >
+                  {t("common.close")}
+                </Button>
+                <Button variant="primary" size="sm" onClick={handleLearnWords}>
+                  {t("settings.history.learnAndCopy")}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-start gap-1 pb-2">
-          <p
-            ref={textRef}
-            className={`italic text-sm w-full ${
-              retrying
-                ? ""
-                : hasTranscription
-                  ? "text-text select-text cursor-text whitespace-pre-wrap break-words"
-                  : "text-ink-3"
-            }`}
-            style={
-              retrying
-                ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
-                : folded
+        ) : (
+          <div className="flex flex-col items-start gap-1">
+            <p
+              ref={textRef}
+              className={cn(
+                "w-full text-sm leading-relaxed",
+                retrying
+                  ? "text-muted-foreground animate-pulse"
+                  : hasTranscription
+                    ? "text-foreground select-text cursor-text whitespace-pre-wrap break-words"
+                    : "text-muted-foreground",
+              )}
+              style={
+                folded
                   ? {
                       display: "-webkit-box",
                       WebkitLineClamp: FOLDED_LINES,
@@ -667,40 +681,120 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                       overflow: "hidden",
                     }
                   : undefined
-            }
-          >
-            {retrying && (
-              <style>{`
-            @keyframes transcribe-pulse {
-              0%, 100% { color: var(--color-ink-3); }
-              50% { color: var(--color-text); }
-            }
-          `}</style>
-            )}
-            {retrying
-              ? progressText
-              : hasTranscription
-                ? displayedText
-                : entry.source_name
-                  ? // Cancelled, interrupted by a quit, or failed.
-                    t("settings.history.notTranscribed")
-                  : t("settings.history.transcriptionFailed")}
-          </p>
-          {hasTranscription && !retrying && (expanded || overflows) && (
-            <button
-              type="button"
-              onClick={() => setExpanded(!expanded)}
-              className="text-xs font-medium text-ink-3 hover:text-logo-primary cursor-pointer"
+              }
             >
-              {expanded
-                ? t("settings.history.showLess")
-                : t("settings.history.showMore")}
-            </button>
-          )}
-        </div>
-      )}
+              {retrying
+                ? progressText
+                : hasTranscription
+                  ? displayedText
+                  : cancelled
+                    ? t("home.cancelledHint")
+                    : entry.source_name
+                      ? t("settings.history.notTranscribed")
+                      : t("settings.history.transcriptionFailed")}
+            </p>
+            {hasTranscription && !retrying && (expanded || overflows) && (
+              <button
+                type="button"
+                onClick={() => setExpanded(!expanded)}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                {expanded
+                  ? t("settings.history.showLess")
+                  : t("settings.history.showMore")}
+              </button>
+            )}
+            {!hasTranscription && !retrying && (
+              <Button
+                variant="primary-soft"
+                size="sm"
+                className="mt-1"
+                onClick={() => retryTranscription(entry.id)}
+              >
+                <RotateCcw size={13} />
+                {t("home.transcribeNow")}
+              </Button>
+            )}
+          </div>
+        )}
 
-      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
-    </div>
+        {showAudio && (
+          <AudioPlayer
+            onLoadRequest={handleLoadAudio}
+            autoPlay
+            className="w-full"
+          />
+        )}
+      </div>
+
+      {/* Actions: revealed on hover or keyboard focus, so the feed reads as text. */}
+      <div className="absolute end-3 top-2 flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <IconButton
+          onClick={handleCopyText}
+          disabled={!hasTranscription || retrying}
+          title={t("settings.history.copyToClipboard")}
+        >
+          {showCopied ? <Check size={15} /> : <Copy size={15} />}
+        </IconButton>
+        <IconButton
+          onClick={() => setShowAudio(!showAudio)}
+          active={showAudio}
+          title={showAudio ? t("home.hideRecording") : t("home.playRecording")}
+        >
+          <Play size={15} />
+        </IconButton>
+        <IconButton
+          onClick={handleSaveToNotes}
+          disabled={!hasTranscription || retrying}
+          title={t("flow.saveAsNote")}
+        >
+          <NotebookPen size={15} />
+        </IconButton>
+        <IconButton
+          onClick={handleToggleEdit}
+          disabled={!hasTranscription || retrying}
+          active={editing}
+          title={t("settings.history.editAndLearn")}
+        >
+          <BookOpen size={15} />
+        </IconButton>
+        <IconButton
+          onClick={onToggleSaved}
+          active={entry.saved}
+          title={
+            entry.saved
+              ? t("settings.history.unsave")
+              : t("settings.history.save")
+          }
+        >
+          <Star size={15} fill={entry.saved ? "currentColor" : "none"} />
+        </IconButton>
+        {retrying ? (
+          <IconButton
+            onClick={() => {
+              setCancelling(true);
+              void cancelTranscription(entry.id);
+            }}
+            disabled={cancelling}
+            title={t("settings.history.cancelTranscription")}
+          >
+            <X size={15} />
+          </IconButton>
+        ) : (
+          <IconButton
+            onClick={() => retryTranscription(entry.id)}
+            title={t("settings.history.retranscribe")}
+          >
+            <RotateCcw size={15} />
+          </IconButton>
+        )}
+        <IconButton
+          onClick={handleDeleteEntry}
+          title={t("settings.history.delete")}
+        >
+          <Trash2 size={15} />
+        </IconButton>
+      </div>
+    </li>
   );
 };

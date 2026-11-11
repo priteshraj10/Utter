@@ -1,17 +1,16 @@
-/* Utter Design System — Modern Sand & Ivory, Dawn Iris, and Carbon Glass. */
+/* Utter design tokens. Light and dark palettes, switched by system preference
+   or by data-theme on <html>. */
 
 :root {
-  /* Light mode — Warm Sand & Ivory + Dawn Iris + Fathom Teal */
+  /* Light mode */
   --light-color-text: #18181b;
   --light-color-background: #fbfbf9;
   --light-color-surface: #ffffff;
   --light-color-sidebar: #f4f3ef;
-  --light-color-logo-primary: #6366f1;
+  --light-color-logo-primary: #4f46e5;
   --light-color-logo-stroke: #18181b;
-  --light-color-dawn-soft: #f4e1ff;
-  --light-color-fathom: #034f46;
 
-  /* Dark mode — Luxurious Carbon Glass + Soft Iris & Lavender */
+  /* Dark mode */
   --dark-color-text: #f3f3ee;
   --dark-color-background: #0d0d0f;
   --dark-color-surface: #161618;
@@ -121,8 +120,11 @@
     var(--dark-color-background)
   );
 
-  /* Brand primary UI fill */
-  --color-background-ui: #6d28d9;
+  /* Brand primary UI fill — the same accent as everything else, so buttons,
+     focus rings and selection never disagree. */
+  --light-color-primary-foreground: #ffffff;
+  --dark-color-primary-foreground: #0d0d0f;
+  --color-background-ui: var(--color-logo-primary);
   --color-mid-gray: #71716e;
 
   /* Active palette (defaults to light) */
@@ -131,6 +133,7 @@
   --color-surface: var(--light-color-surface);
   --color-sidebar: var(--light-color-sidebar);
   --color-logo-primary: var(--light-color-logo-primary);
+  --color-primary-foreground: var(--light-color-primary-foreground);
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
   --color-moss: var(--light-color-moss);
@@ -171,6 +174,8 @@
     --color-surface: var(--dark-color-surface);
     --color-sidebar: var(--dark-color-sidebar);
     --color-logo-primary: var(--dark-color-logo-primary);
+    --color-primary-foreground: var(--dark-color-primary-foreground);
+    --color-primary-foreground: var(--dark-color-primary-foreground);
     --color-warning: var(--dark-color-warning);
     --color-error: var(--dark-color-error);
     --color-moss: var(--dark-color-moss);
@@ -196,6 +201,7 @@
   --color-surface: var(--light-color-surface);
   --color-sidebar: var(--light-color-sidebar);
   --color-logo-primary: var(--light-color-logo-primary);
+  --color-primary-foreground: var(--light-color-primary-foreground);
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
   --color-moss: var(--light-color-moss);
@@ -220,6 +226,7 @@
   --color-surface: var(--dark-color-surface);
   --color-sidebar: var(--dark-color-sidebar);
   --color-logo-primary: var(--dark-color-logo-primary);
+  --color-primary-foreground: var(--dark-color-primary-foreground);
   --color-warning: var(--dark-color-warning);
   --color-error: var(--dark-color-error);
   --color-moss: var(--dark-color-moss);

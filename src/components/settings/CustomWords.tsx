@@ -15,7 +15,7 @@ const normalizeCustomWord = (word: string) =>
   word.replace(/[<"']/g, "").replace(/\s+/g, " ").trim();
 
 export const CustomWords: React.FC<CustomWordsProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "inline", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const [newWord, setNewWord] = useState("");

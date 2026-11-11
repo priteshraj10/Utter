@@ -9,7 +9,7 @@ interface AudioFeedbackProps {
 }
 
 export const AudioFeedback: React.FC<AudioFeedbackProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "inline", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const audioFeedbackEnabled = getSetting("audio_feedback") || false;

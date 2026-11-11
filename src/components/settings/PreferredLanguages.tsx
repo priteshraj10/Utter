@@ -18,7 +18,7 @@ interface PreferredLanguagesProps {
 
 /** Edits `spoken_languages`; leaves the model's own Language as is. */
 export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t, i18n } = useTranslation();

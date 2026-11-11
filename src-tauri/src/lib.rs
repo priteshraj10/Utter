@@ -9,11 +9,13 @@ mod chinese_script;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod diarization;
 pub mod engine_supervisor;
 mod helpers;
 mod input;
 mod language_detection;
 mod llm_client;
+mod local_llm;
 mod managers;
 mod memory;
 mod overlay;
@@ -23,6 +25,7 @@ mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod speakers;
 mod system_languages;
 mod transcription_coordinator;
 mod tray;
@@ -760,6 +763,10 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::update_note,
             commands::utter::delete_note,
             commands::utter::summarize_note,
+            commands::utter::speaker_model_status,
+            commands::utter::local_ai_status,
+            commands::utter::label_note_speakers,
+            commands::utter::retranscribe_note,
             commands::utter::update_note_summary,
             commands::utter::set_note_pinned,
             commands::utter::set_note_tags,
@@ -785,6 +792,7 @@ pub fn run(cli_args: CliArgs) {
             commands::models::get_model_info,
             commands::models::download_model,
             commands::models::download_language_detector,
+            commands::models::download_speaker_model,
             commands::models::is_language_detector_downloaded,
             commands::models::delete_model,
             commands::models::get_retired_models,

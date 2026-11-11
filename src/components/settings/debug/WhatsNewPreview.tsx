@@ -13,7 +13,7 @@ interface WhatsNewPreviewProps {
 }
 
 export const WhatsNewPreview: React.FC<WhatsNewPreviewProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

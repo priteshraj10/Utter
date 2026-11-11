@@ -1,4 +1,6 @@
-import React from "react";
+import * as React from "react";
+import * as SwitchPrimitive from "@radix-ui/react-switch";
+import { cn } from "@/lib/utils/cn";
 
 interface SwitchProps {
   checked: boolean;
@@ -8,31 +10,38 @@ interface SwitchProps {
   ariaLabel?: string;
   /** The id of a visible label that names the switch. */
   ariaLabelledBy?: string;
+  className?: string;
 }
 
-/** The on/off switch on its own; ToggleSwitch puts it in a settings row. */
+/** shadcn/ui switch (Radix). ToggleSwitch puts it in a settings row. */
 export const Switch: React.FC<SwitchProps> = ({
   checked,
   onChange,
   disabled = false,
   ariaLabel,
   ariaLabelledBy,
-}) => {
-  return (
-    <label
-      className={`flex items-center ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
-    >
-      <input
-        type="checkbox"
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledBy}
-        value=""
-        className="sr-only peer"
-        checked={checked}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <div className="relative w-11 h-6 bg-line peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-line-strong after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-background-ui peer-disabled:opacity-50"></div>
-    </label>
-  );
-};
+  className,
+}) => (
+  <SwitchPrimitive.Root
+    checked={checked}
+    onCheckedChange={onChange}
+    disabled={disabled}
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledBy}
+    className={cn(
+      "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent shadow-xs transition-colors",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+      "disabled:cursor-not-allowed disabled:opacity-50",
+      "data-[state=checked]:bg-primary data-[state=unchecked]:bg-line-strong/60",
+      className,
+    )}
+  >
+    <SwitchPrimitive.Thumb
+      className={cn(
+        "pointer-events-none block size-4 rounded-full bg-white shadow-sm ring-0 transition-transform",
+        "data-[state=unchecked]:translate-x-0.5 data-[state=checked]:translate-x-[18px]",
+        "rtl:data-[state=checked]:-translate-x-[18px] rtl:data-[state=unchecked]:-translate-x-0.5",
+      )}
+    />
+  </SwitchPrimitive.Root>
+);

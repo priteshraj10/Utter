@@ -9,7 +9,7 @@ interface VoiceActivityDetectionProps {
 }
 
 export const VoiceActivityDetection: React.FC<VoiceActivityDetectionProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

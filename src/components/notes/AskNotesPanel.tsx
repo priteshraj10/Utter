@@ -76,7 +76,7 @@ export const AskNotesPanel: React.FC<{ onOpenNote: (id: number) => void }> = ({
         )}
         {history.map((ex, i) => (
           <div key={i} className="space-y-2">
-            <div className="ml-auto max-w-[80%] w-fit rounded-2xl rounded-tr-xs bg-gradient-to-r from-logo-primary/20 to-logo-primary/30 text-text border border-logo-primary/30 px-4 py-2.5 text-sm shadow-2xs">
+            <div className="ml-auto max-w-[80%] w-fit rounded-2xl rounded-tr-xs bg-primary text-primary-foreground px-4 py-2.5 text-sm shadow-2xs">
               {ex.question}
             </div>
             <div className="max-w-[90%] rounded-2xl rounded-tl-xs border border-line bg-surface/90 px-4 py-3 text-sm shadow-2xs space-y-2">

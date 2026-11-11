@@ -137,6 +137,9 @@ struct TranscribeAction {
     mode: DictationMode,
 }
 
+/// Event sent with `{ id, title }` when a recording is saved as a note.
+const NOTE_SAVED_EVENT: &str = "note-saved";
+
 /// Saves a voice note or meeting and summarizes it in the background with auto-detected classification.
 fn save_voice_note(
     app: &AppHandle,
@@ -182,12 +185,30 @@ fn save_voice_note(
         let _ = notes.set_tags(note.id, &tags);
     }
 
-    // Automatically generate rich structured summaries for notes with content
+    // Say where the words went, so a note never appears (or seems missing)
+    // without the user knowing.
+    let _ = app.emit(
+        NOTE_SAVED_EVENT,
+        serde_json::json!({ "id": note.id, "title": note.title }),
+    );
+
+    // Long recordings with several people get speaker labels first (which
+    // re-summarizes); everything else, or a single speaker, is summarized now.
     let word_count = text.split_whitespace().count();
-    if word_count >= 5 {
+    let label_speakers = note.audio_file.is_some()
+        && audio_seconds >= crate::speakers::MIN_SECONDS
+        && crate::speakers::model_ready(app);
+    if word_count >= 5 || label_speakers {
         let app = app.clone();
         let template_clone = template.clone();
         tauri::async_runtime::spawn(async move {
+            if label_speakers {
+                match crate::speakers::label_note_speakers(&app, note.id).await {
+                    Ok(speakers) if speakers >= 2 => return,
+                    Ok(_) => {}
+                    Err(e) => warn!("Speaker labelling skipped: {e}"),
+                }
+            }
             if let Err(e) = summarize_note(&app, note.id, Some(template_clone)).await {
                 warn!("Automatic note summary failed: {e}");
             }
@@ -585,7 +606,8 @@ async fn post_process_transcription(
             None
         },
     );
-    let mut res = run_llm_prompt(settings, transcription, &contextual_prompt).await;
+    // Provider only: a local model on every dictation would slow typing down.
+    let mut res = run_provider_prompt(settings, transcription, &contextual_prompt).await;
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     if res.is_none() && apple_intelligence::check_apple_intelligence_availability() {
@@ -611,11 +633,27 @@ async fn post_process_transcription(
 /// Sends `input` through the configured post-processing provider with
 /// `prompt` (a template that may contain `${output}`). Used by AI cleanup,
 /// command mode and note summaries.
+/// Runs `prompt` over `input` with the configured provider, or else the
+/// local AI (Ollama) when one is running. `None` when neither answers; the
+/// caller then falls back to Apple Intelligence or built-in rules.
 pub(crate) async fn run_llm_prompt(
     settings: &AppSettings,
     input: &str,
     prompt: &str,
 ) -> Option<String> {
+    if let Some(result) = run_provider_prompt(settings, input, prompt).await {
+        return Some(result);
+    }
+    if prompt.trim().is_empty() || input.trim().is_empty() {
+        return None;
+    }
+    crate::local_llm::chat(&build_system_prompt(prompt), input)
+        .await
+        .map(|text| strip_invisible_chars(&text))
+}
+
+/// Runs `prompt` with the configured provider only.
+async fn run_provider_prompt(settings: &AppSettings, input: &str, prompt: &str) -> Option<String> {
     let transcription = input;
     let prompt = prompt.to_string();
 
@@ -1194,8 +1232,13 @@ impl ShortcutAction for TranscribeAction {
         }
 
         if recording_error.is_none() {
-            // Dynamically register the cancel shortcut in a separate task to avoid deadlock
-            shortcut::register_cancel_shortcut(app);
+            // Notes and meetings can run for an hour; a global Escape pressed in
+            // another app must not silently discard them. They end only through
+            // their own stop control (the voice-note shortcut or Notes' Stop).
+            if self.mode != DictationMode::Note {
+                // Dynamically register the cancel shortcut in a separate task to avoid deadlock
+                shortcut::register_cancel_shortcut(app);
+            }
         } else {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.

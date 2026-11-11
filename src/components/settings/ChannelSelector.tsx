@@ -11,7 +11,7 @@ interface ChannelSelectorProps {
 }
 
 export const ChannelSelector: React.FC<ChannelSelectorProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "inline", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating, isLoading } = useSettings();
     const [channelCount, setChannelCount] = useState(1);

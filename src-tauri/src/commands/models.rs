@@ -73,6 +73,29 @@ pub fn is_language_detector_downloaded(model_manager: State<'_, Arc<ModelManager
 /// `LANGUAGE_DETECTOR_ID`.
 #[tauri::command]
 #[specta::specta]
+pub async fn download_speaker_model(
+    app_handle: AppHandle,
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<(), String> {
+    let result = model_manager
+        .download_speaker_model()
+        .await
+        .map_err(|e| e.to_string());
+    if let Err(ref error) = result {
+        error!("Speaker model download failed: {}", error);
+        let _ = app_handle.emit(
+            "model-download-failed",
+            serde_json::json!({ "model_id": crate::managers::model::SPEAKER_MODEL_ID, "error": error }),
+        );
+    }
+    result
+}
+
+/// Download the language detector; progress, completion,
+/// cancellation and failure use the model download events under
+/// `LANGUAGE_DETECTOR_ID`.
+#[tauri::command]
+#[specta::specta]
 pub async fn download_language_detector(
     app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,

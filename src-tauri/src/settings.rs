@@ -608,7 +608,7 @@ fn default_model() -> String {
     "".to_string()
 }
 
-const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 2;
+const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 3;
 
 fn default_settings_schema_version() -> u32 {
     CURRENT_SETTINGS_SCHEMA_VERSION
@@ -713,9 +713,14 @@ fn default_auto_submit() -> bool {
     false
 }
 
+/// How many dictations History keeps. Home is built on it, so it has to hold
+/// more than the last few.
 fn default_history_limit() -> usize {
-    5
+    200
 }
+
+/// The history limit every install had before schema 3.
+const LEGACY_DEFAULT_HISTORY_LIMIT: usize = 5;
 
 fn default_recording_retention_period() -> RecordingRetentionPeriod {
     RecordingRetentionPeriod::PreserveLimit
@@ -1453,6 +1458,17 @@ fn apply_settings_migrations(
         // transcribe.cpp 0.2 replaced integer registry indices with opaque
         // process-local handles. Clear every old index once.
         settings.transcribe_gpu_device = default_transcribe_gpu_device();
+        updated = true;
+    }
+    if stored_schema_version < 3 {
+        // History used to keep 5 entries, so dictations vanished within
+        // minutes. Raise the old default; a limit the user chose stays.
+        if settings.history_limit == LEGACY_DEFAULT_HISTORY_LIMIT {
+            settings.history_limit = default_history_limit();
+        }
+        updated = true;
+    }
+    if stored_schema_version < u64::from(CURRENT_SETTINGS_SCHEMA_VERSION) {
         settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
         updated = true;
     }

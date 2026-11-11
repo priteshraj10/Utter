@@ -29,6 +29,22 @@
   --color-ink-3: var(--color-ink-3);
   --color-line: var(--color-line);
   --color-line-strong: var(--color-line-strong);
+
+  /* shadcn/ui token names, aliased onto the palette above so components
+     written against shadcn conventions pick up the app's colors. */
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-primary: var(--color-logo-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-muted: var(--color-wash);
+  --color-muted-foreground: var(--color-ink-3);
+  --color-accent: var(--color-wash);
+  --color-accent-foreground: var(--color-text);
+  --color-destructive: var(--color-error);
+  --color-border: var(--color-line);
+  --color-input: var(--color-line-strong);
+  --color-ring: var(--color-logo-primary);
 }
 
 /* Noto Sans CJK subset (see src/lib/utils/cjkFont.ts): Windows' CJK fonts
@@ -43,9 +59,6 @@
 /* Onboarding's scale in px (rem steps land on fractions at a 15px root).
    Names avoid Tailwind's defaults, which Settings still uses. */
 @theme {
-  --font-serif:
-    -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", "Segoe UI",
-    Roboto, sans-serif;
   --font-display:
     -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display",
     "Segoe UI Variable Display", "Segoe UI", sans-serif;
@@ -219,15 +232,6 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
 }
 
 @media (prefers-color-scheme: dark) {

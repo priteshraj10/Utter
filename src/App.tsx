@@ -39,6 +39,7 @@ import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { deleteRetiredModel } from "@/lib/models/retired";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
+import { NAVIGATE_EVENT } from "@/lib/navigation";
 
 // flow is first-run onboarding; the rest are single screens for returning users.
 type OnboardingStep =
@@ -71,12 +72,12 @@ const renderSettingsContent = (
   }
 
   const ActiveComponent =
-    SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
+    SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.home.component;
   return (
     <Suspense
       fallback={
         <div className="flex-1 flex items-center justify-center p-8">
-          <div className="w-5 h-5 rounded-full border-2 border-logo-primary border-t-transparent animate-spin" />
+          <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       }
     >
@@ -95,9 +96,8 @@ function App() {
   // Set when a returning user's selected model is a retired (ONNX) model that
   // is still on disk: they must update it before the app can transcribe.
   const [migrationModelId, setMigrationModelId] = useState<string | null>(null);
-  const [currentSection, setCurrentSection] =
-    useState<SidebarSection>("general");
-  const showHistory = useCallback(() => setCurrentSection("history"), []);
+  const [currentSection, setCurrentSection] = useState<SidebarSection>("home");
+  const showHistory = useCallback(() => setCurrentSection("home"), []);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -180,12 +180,63 @@ function App() {
         });
       } else {
         toast.error(
-          t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
+          t("errors.recordingFailed", {
+            error: detail ?? t("errors.unknown"),
+          }),
         );
       }
     });
     return () => {
       unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // Pages ask for another section through navigateTo() (lib/navigation.ts).
+  useEffect(() => {
+    const onNavigate = (event: Event) => {
+      const section = (event as CustomEvent<string>).detail;
+      if (section in SECTIONS_CONFIG) {
+        setCurrentSection(section as SidebarSection);
+      }
+    };
+    window.addEventListener(NAVIGATE_EVENT, onNavigate);
+    return () => window.removeEventListener(NAVIGATE_EVENT, onNavigate);
+  }, []);
+
+  // Tell the user where a recording went, so nothing seems to vanish.
+  const sectionRef = useRef(currentSection);
+  useEffect(() => {
+    sectionRef.current = currentSection;
+  }, [currentSection]);
+
+  useEffect(() => {
+    const unlistenKept = listen<number>("recording-kept", () => {
+      toast(t("toasts.recordingKept.title"), {
+        description: t("toasts.recordingKept.description"),
+        duration: 8000,
+        action: {
+          label: t("toasts.recordingKept.action"),
+          onClick: () => setCurrentSection("home"),
+        },
+      });
+    });
+    const unlistenNote = listen<{ id: number; title: string }>(
+      "note-saved",
+      (event) => {
+        // Already looking at Notes: the new note opens there by itself.
+        if (sectionRef.current === "notes") return;
+        toast.success(t("toasts.noteSaved.title"), {
+          description: event.payload.title || t("notes.untitled"),
+          action: {
+            label: t("toasts.noteSaved.action"),
+            onClick: () => setCurrentSection("notes"),
+          },
+        });
+      },
+    );
+    return () => {
+      unlistenKept.then((fn) => fn());
+      unlistenNote.then((fn) => fn());
     };
   }, [t]);
 
@@ -371,11 +422,11 @@ function App() {
         unstyled: true,
         classNames: {
           toast:
-            "bg-background border border-line rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
+            "w-full bg-card text-foreground border border-border rounded-xl shadow-lg px-4 py-3 flex items-start gap-3 text-sm",
           title: "font-medium",
-          description: "text-ink-3",
+          description: "mt-0.5 text-xs text-muted-foreground",
           actionButton:
-            "px-2 py-1 text-xs font-medium rounded-lg border bg-wash border-line hover:bg-logo-primary/20 hover:border-logo-primary cursor-pointer whitespace-nowrap",
+            "h-7 px-2.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-accent cursor-pointer whitespace-nowrap",
         },
       }}
     />
@@ -385,8 +436,8 @@ function App() {
   if (onboardingStep === null) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-text select-none">
-        <div className="w-8 h-8 rounded-full border-2 border-logo-primary border-t-transparent animate-spin mb-4" />
-        <p className="text-sm text-ink-3">Loading Utter...</p>
+        <div className="mb-3 size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">{t("app.loading")}</p>
       </div>
     );
   }
@@ -457,7 +508,7 @@ function App() {
             <div ref={settingsScrollRef} className="flex-1 overflow-y-auto">
               {/* Models fills the window: its table scrolls, not the page. */}
               <div
-                className={`flex flex-col items-center p-4 gap-4 ${currentSection === "models" ? "h-full" : ""}`}
+                className={`flex flex-col items-center px-8 py-6 gap-4 ${currentSection === "models" ? "h-full" : ""}`}
               >
                 <SecureInputWarning />
                 {renderSettingsContent(

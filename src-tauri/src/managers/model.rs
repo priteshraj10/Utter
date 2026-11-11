@@ -527,6 +527,8 @@ fn local_caps(probe: &CapabilityProbe) -> LocalCaps {
 /// Download id under which a standalone language detector download reports
 /// progress, completion and cancellation, like a model's.
 pub const LANGUAGE_DETECTOR_ID: &str = "language-detector";
+/// Download id (progress, cancel) of the speaker model.
+pub const SPEAKER_MODEL_ID: &str = "speaker-model";
 
 /// Where one file's download progress is reported: under `model_id`, its bytes
 /// counted from `offset`, out of `total` (default: `offset` + the file's own
@@ -875,6 +877,7 @@ pub struct ModelManager {
     /// One language detector transfer at a time, however many downloads
     /// want it.
     detector_download: tokio::sync::Mutex<()>,
+    diarizer_download: tokio::sync::Mutex<()>,
 }
 
 impl ModelManager {
@@ -1079,6 +1082,7 @@ impl ModelManager {
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             is_rescanning: Arc::new(AtomicBool::new(false)),
             detector_download: tokio::sync::Mutex::new(()),
+            diarizer_download: tokio::sync::Mutex::new(()),
         };
 
         // Migrate any bundled models to user directory
@@ -1324,7 +1328,7 @@ impl ModelManager {
                 // A models-dir copy counts too: mirror-fallback downloads land
                 // there, and it makes manual drop-ins of catalog files work.
                 let local_path = self.models_dir.join(&model.filename);
-                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                let partial_path = self.models_dir.join(format!("{}.partial", model.filename));
                 model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some()
                     || local_path.exists();
                 model.is_downloading = false;
@@ -1342,7 +1346,7 @@ impl ModelManager {
                 continue;
             }
             let model_path = self.models_dir.join(&model.filename);
-            let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+            let partial_path = self.models_dir.join(format!("{}.partial", model.filename));
 
             model.is_downloaded = model_path.exists();
             model.is_downloading = false;
@@ -1934,6 +1938,46 @@ impl ModelManager {
         crate::catalog::LANGUAGE_DETECTOR.as_ref()
     }
 
+    /// Download the speaker model, tracked and cancelled under
+    /// [`SPEAKER_MODEL_ID`] like a model.
+    pub async fn download_speaker_model(&self) -> Result<()> {
+        let cancel_token = CancellationToken::new();
+        self.cancel_flags
+            .lock()
+            .unwrap()
+            .insert(SPEAKER_MODEL_ID.to_string(), cancel_token.clone());
+        let fetched = self.fetch_speaker_model(&cancel_token).await;
+        self.cancel_flags.lock().unwrap().remove(SPEAKER_MODEL_ID);
+        if fetched? {
+            let _ = self
+                .app_handle
+                .emit("model-download-complete", SPEAKER_MODEL_ID);
+        }
+        Ok(())
+    }
+
+    async fn fetch_speaker_model(&self, cancel_token: &CancellationToken) -> Result<bool> {
+        let diarizer = crate::catalog::DIARIZER
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("The catalog names no speaker model"))?;
+        let _single = tokio::select! {
+            guard = self.diarizer_download.lock() => guard,
+            _ = cancel_token.cancelled() => return Ok(false),
+        };
+        if self.speaker_model_path().is_some() {
+            return Ok(true);
+        }
+        let transfer = FileTransfer {
+            label: "the speaker model",
+            repo_id: &diarizer.repo_id,
+            revision: &diarizer.revision,
+            filename: &diarizer.filename,
+            mirrors: crate::catalog::diarizer_mirrors(),
+            progress: ProgressTarget::own(SPEAKER_MODEL_ID),
+        };
+        self.fetch_hf_file(&transfer, cancel_token).await
+    }
+
     /// Download the language detector on its own, tracked and cancelled under
     /// [`LANGUAGE_DETECTOR_ID`] like a model.
     pub async fn download_language_detector(&self) -> Result<()> {
@@ -2284,7 +2328,7 @@ impl ModelManager {
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
             .models_dir
-            .join(format!("{}.partial", &model_info.filename));
+            .join(format!("{}.partial", model_info.filename));
 
         // Don't download if complete version already exists
         if model_path.exists() {
@@ -2396,7 +2440,7 @@ impl ModelManager {
             for path in [
                 self.models_dir.join(&model_info.filename),
                 self.models_dir
-                    .join(format!("{}.partial", &model_info.filename)),
+                    .join(format!("{}.partial", model_info.filename)),
             ] {
                 if path.exists() {
                     info!("Deleting model file at: {:?}", path);
@@ -2425,7 +2469,7 @@ impl ModelManager {
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
             .models_dir
-            .join(format!("{}.partial", &model_info.filename));
+            .join(format!("{}.partial", model_info.filename));
         debug!("ModelManager: Model path: {:?}", model_path);
         debug!("ModelManager: Partial path: {:?}", partial_path);
 
@@ -2536,7 +2580,7 @@ impl ModelManager {
             if local_path.exists() {
                 let partial_path = self
                     .models_dir
-                    .join(format!("{}.partial", &model_info.filename));
+                    .join(format!("{}.partial", model_info.filename));
                 if partial_path.exists() {
                     let _ = fs::remove_file(&partial_path);
                 }
@@ -2552,7 +2596,7 @@ impl ModelManager {
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
             .models_dir
-            .join(format!("{}.partial", &model_info.filename));
+            .join(format!("{}.partial", model_info.filename));
 
         if !model_path.exists() {
             self.mark_model_unavailable(model_id);
@@ -2569,6 +2613,15 @@ impl ModelManager {
 
     /// The spoken-language detector's file, when it is fully on disk: in the
     /// HF cache, or in the models dir (mirror fallback / manual drop-in).
+    /// The speaker model's file, when it is fully on disk.
+    pub fn speaker_model_path(&self) -> Option<PathBuf> {
+        let diarizer = crate::catalog::DIARIZER.as_ref()?;
+        hf_cached_path(&diarizer.repo_id, &diarizer.revision, &diarizer.filename).or_else(|| {
+            let local = self.models_dir.join(&diarizer.filename);
+            local.is_file().then_some(local)
+        })
+    }
+
     pub fn language_detector_path(&self) -> Option<PathBuf> {
         let detector = crate::catalog::LANGUAGE_DETECTOR.as_ref()?;
         hf_cached_path(&detector.repo_id, &detector.revision, &detector.filename).or_else(|| {

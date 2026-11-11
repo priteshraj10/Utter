@@ -65,7 +65,7 @@ export const MicrophoneDropdown: React.FC<{
 };
 
 export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "inline", grouped = false }) => {
     const { t } = useTranslation();
     const { resetSetting, isUpdating, isLoading } = useSettings();
 

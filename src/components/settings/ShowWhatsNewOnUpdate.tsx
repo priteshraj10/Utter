@@ -9,7 +9,7 @@ interface ShowWhatsNewOnUpdateProps {
 }
 
 export const ShowWhatsNewOnUpdate: React.FC<ShowWhatsNewOnUpdateProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

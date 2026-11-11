@@ -10,7 +10,7 @@ interface LanguageDetectionWindowProps {
 
 export const LanguageDetectionWindow: React.FC<
   LanguageDetectionWindowProps
-> = ({ descriptionMode = "tooltip", grouped = false }) => {
+> = ({ descriptionMode = "inline", grouped = false }) => {
   const { t } = useTranslation();
   const { settings, updateSetting, resetSetting, isUpdating } = useSettings();
 

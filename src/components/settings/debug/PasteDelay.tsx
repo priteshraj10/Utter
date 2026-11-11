@@ -14,7 +14,7 @@ interface PasteDelayProps {
 }
 
 export const PasteDelay: React.FC<PasteDelayProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
   settingKey = "paste_delay_ms",
   labelKey = "settings.debug.pasteDelay.title",

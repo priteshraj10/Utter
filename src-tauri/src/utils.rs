@@ -1,10 +1,11 @@
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
 use crate::TranscriptionCoordinator;
-use log::info;
+use log::{error, info};
 use std::sync::Arc;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 // Re-export all utility modules for easy access
 // pub use crate::audio_feedback::*;
@@ -108,7 +109,9 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Cancel any ongoing recording
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     let recording_was_active = audio_manager.is_recording();
-    audio_manager.cancel_recording();
+    if let Some(samples) = audio_manager.cancel_recording() {
+        keep_cancelled_recording(app, samples);
+    }
 
     // Abandon any live streaming transcription, and stop a transcription
     // already in progress
@@ -132,6 +135,46 @@ pub fn cancel_current_operation(app: &AppHandle) {
 
     info!("Operation cancellation completed - returned to idle state");
 }
+
+/// Cancelled recordings shorter than this are a slip of the finger; drop them.
+const KEEP_CANCELLED_MIN_SECONDS: f64 = 3.0;
+
+/// Event telling the UI a cancelled recording was kept in History.
+pub const RECORDING_KEPT_EVENT: &str = "recording-kept";
+
+/// Keeps a cancelled recording in History, untranscribed, so Cancel (or a
+/// stray Escape) can always be undone: the user transcribes it from History.
+fn keep_cancelled_recording(app: &AppHandle, samples: Vec<f32>) {
+    let seconds =
+        samples.len() as f64 / crate::audio_toolkit::constants::WHISPER_SAMPLE_RATE as f64;
+    if seconds < KEEP_CANCELLED_MIN_SECONDS {
+        return;
+    }
+    let app = app.clone();
+    // Writing an hour of audio takes a moment; keep it off the caller's thread.
+    tauri::async_runtime::spawn_blocking(move || {
+        let hm = app.state::<Arc<HistoryManager>>();
+        let file_name = format!("cancelled-{}.wav", chrono::Utc::now().timestamp());
+        let path = hm.recordings_dir().join(&file_name);
+        if let Err(e) = crate::audio_toolkit::save_wav_file(&path, &samples) {
+            error!("Failed to keep cancelled recording: {e}");
+            return;
+        }
+        match hm.save_file_entry(file_name, CANCELLED_SOURCE_NAME.to_string()) {
+            Ok(entry) => {
+                info!(
+                    "Kept cancelled recording ({seconds:.0}s) as history entry {}",
+                    entry.id
+                );
+                let _ = app.emit(RECORDING_KEPT_EVENT, seconds);
+            }
+            Err(e) => error!("Failed to save cancelled recording entry: {e}"),
+        }
+    });
+}
+
+/// Stored as the entry's source name; the UI shows its own localized label.
+pub const CANCELLED_SOURCE_NAME: &str = "Cancelled recording";
 
 /// Check if using the Wayland display server protocol
 #[cfg(target_os = "linux")]

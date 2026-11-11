@@ -66,8 +66,8 @@ export const AboutSettings: React.FC = () => {
       </div>
 
       <SettingsGroup title={t("settings.about.title")}>
-        <AppLanguageSelector descriptionMode="tooltip" grouped={true} />
-        <ThemeSelector descriptionMode="tooltip" grouped={true} />
+        <AppLanguageSelector grouped={true} />
+        <ThemeSelector grouped={true} />
         <SettingContainer
           title={t("settings.about.version.title")}
           description={t("settings.about.version.description")}
@@ -77,8 +77,8 @@ export const AboutSettings: React.FC = () => {
           <span className="text-sm font-mono">v{version}</span>
         </SettingContainer>
 
-        <ShowWhatsNewOnUpdate descriptionMode="tooltip" grouped={true} />
-        <AppDataDirectory descriptionMode="tooltip" grouped={true} />
+        <ShowWhatsNewOnUpdate grouped={true} />
+        <AppDataDirectory grouped={true} />
         <LogDirectory grouped={true} />
       </SettingsGroup>
 

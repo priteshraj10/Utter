@@ -703,6 +703,49 @@ async deleteNote(id: number) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Whether a local AI (Ollama) is installed and running, and its model.
+ */
+async localAiStatus() : Promise<LocalAiStatus> {
+    return await TAURI_INVOKE("local_ai_status");
+},
+/**
+ * Whether the speaker model is on disk, and how big its download is.
+ */
+async speakerModelStatus() : Promise<SpeakerModelStatus> {
+    return await TAURI_INVOKE("speaker_model_status");
+},
+/**
+ * Finds who spoke when in note `id`, rewrites its transcript with speaker
+ * labels and re-summarizes it. Returns how many speakers were found.
+ */
+async labelNoteSpeakers(id: number) : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("label_note_speakers", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Transcribes note `id` again from its recording and re-summarizes it.
+ */
+async retranscribeNote(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("retranscribe_note", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async downloadSpeakerModel() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("download_speaker_model") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async summarizeNote(id: number, template: string | null) : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("summarize_note", { id, template }) };
@@ -1427,6 +1470,19 @@ export type KeyboardDiagnosticReport = { secure_input_enabled: boolean; culprit_
 key_down: number; key_up: number; flags_changed: number; mouse: number; duration_ms: number }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
+export type LocalAiStatus = { 
+/**
+ * Ollama looks installed on this computer.
+ */
+installed: boolean; 
+/**
+ * Ollama answered and has a model Utter can use.
+ */
+running: boolean; 
+/**
+ * The model Utter picked.
+ */
+model: string | null }
 /**
  * When Handy's spoken-language detector picks the language for Auto.
  */
@@ -1583,7 +1639,12 @@ export type RecordingPhase =
  */
 "cancelled"
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
-export type RecordingStateEvent = { phase: RecordingPhase }
+export type RecordingStateEvent = { phase: RecordingPhase; 
+/**
+ * The shortcut that started the recording (`transcribe`, `voice_note`,
+ * ...), sent with `Started` so the UI can say where the words will go.
+ */
+binding_id: string | null }
 /**
  * A retired ONNX model found on disk.
  */
@@ -1645,6 +1706,10 @@ export type ShortcutBinding = { id: string; name: string; description: string; d
  * postal address. Matched case-insensitively on word boundaries.
  */
 export type Snippet = { id: string; trigger: string; expansion: string }
+/**
+ * Whether the speaker model is on disk, and how big its download is.
+ */
+export type SpeakerModelStatus = { downloaded: boolean; size_mb: number }
 export type SoundTheme = "marimba" | "pop" | "custom"
 /**
  * Phase of the streaming overlay card, emitted to drive its UI state.

@@ -11,7 +11,7 @@ interface VadBackendSelectorProps {
 }
 
 export const VadBackendSelector: React.FC<VadBackendSelectorProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

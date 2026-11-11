@@ -10,7 +10,7 @@ interface ReliablePasteToggleProps {
 }
 
 export const ReliablePasteToggle: React.FC<ReliablePasteToggleProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

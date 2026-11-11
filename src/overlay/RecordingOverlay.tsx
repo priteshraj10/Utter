@@ -59,6 +59,8 @@ const RecordingOverlay: React.FC = () => {
   // from a top overlay (oldest line under the pill) and upward from a bottom one.
   const [position, setPosition] = useState<"top" | "bottom">("bottom");
   const [modeBadge, setModeBadge] = useState<string | null>(null);
+  // Which shortcut started this recording, so the pill says where words go.
+  const [bindingId, setBindingId] = useState<string | null>(null);
   // True once live text overflows the cap. A top overlay fades its top edge only
   // while overflowing, so the resting first line stays crisp flush under the pill.
   const [overflowing, setOverflowing] = useState(false);
@@ -140,6 +142,14 @@ const RecordingOverlay: React.FC = () => {
         setStreamText(event.payload);
       });
 
+      const unlistenRecording = await events.recordingStateEvent.listen(
+        (event) => {
+          if (event.payload.phase === "started") {
+            setBindingId(event.payload.binding_id);
+          }
+        },
+      );
+
       const unlistenPhase = await events.streamPhaseEvent.listen((event) => {
         const payload: StreamPhaseEvent = event.payload;
         setPhase(payload.phase);
@@ -180,6 +190,7 @@ const RecordingOverlay: React.FC = () => {
         unlistenLevel();
         unlistenStream();
         unlistenPhase();
+        unlistenRecording();
         unlistenModel();
         clearTimeout(modelLoadTimerRef.current);
       };
@@ -247,6 +258,15 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
+  const bindingLabel =
+    bindingId === "voice_note"
+      ? t("overlay.modes.note")
+      : bindingId === "command_mode"
+        ? t("overlay.modes.command")
+        : bindingId === "transcribe_with_post_process"
+          ? t("overlay.modes.ai")
+          : null;
+
   const cancelBtn = (
     <button
       className="sx"
@@ -273,7 +293,9 @@ const RecordingOverlay: React.FC = () => {
       </div>
       {waveform}
       <div className="sbase-r">
-        {modeBadge && <span className="smode-pill">{modeBadge}</span>}
+        {(bindingLabel ?? modeBadge) && (
+          <span className="smode-pill">{bindingLabel ?? modeBadge}</span>
+        )}
         {showTimer && <span className="stimer">{fmtTime(elapsed)}</span>}
         {showCancel && cancelBtn}
       </div>

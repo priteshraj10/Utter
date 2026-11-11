@@ -9,7 +9,7 @@ interface LongFormChunkingProps {
 }
 
 export const LongFormChunking: React.FC<LongFormChunkingProps> = ({
-  descriptionMode = "tooltip",
+  descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

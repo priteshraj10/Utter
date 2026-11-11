@@ -1,32 +1,24 @@
-import React from "react";
+import * as React from "react";
+import { cn } from "@/lib/utils/cn";
+
+export const fieldClasses =
+  "w-full rounded-lg border border-input bg-background text-sm text-foreground text-start shadow-xs transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   variant?: "default" | "compact";
 }
 
-export const Input: React.FC<InputProps> = ({
-  className = "",
-  variant = "default",
-  disabled,
-  ...props
-}) => {
-  const baseClasses =
-    "px-2 py-1 text-sm font-semibold bg-wash border border-line-strong rounded-md text-start transition-all duration-150";
-
-  const interactiveClasses = disabled
-    ? "opacity-60 cursor-not-allowed bg-wash border-line"
-    : "hover:bg-logo-primary/10 hover:border-logo-primary focus:outline-none focus:bg-logo-primary/20 focus:border-logo-primary";
-
-  const variantClasses = {
-    default: "px-3 py-2",
-    compact: "px-2 py-1",
-  } as const;
-
-  return (
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, variant = "default", ...props }, ref) => (
     <input
-      className={`${baseClasses} ${variantClasses[variant]} ${interactiveClasses} ${className}`}
-      disabled={disabled}
+      ref={ref}
+      className={cn(
+        fieldClasses,
+        variant === "compact" ? "h-7 px-2" : "h-9 px-3",
+        className,
+      )}
       {...props}
     />
-  );
-};
+  ),
+);
+Input.displayName = "Input";
