@@ -1,4 +1,6 @@
-// Utter's mark: a sleek, modern waveform emblem in a rounded squircle.
+// Utter's mark: a bold rounded "U" holding three voice bars, on the brand
+// indigo. Same geometry and colors as the app icon (src-tauri/icons), so it
+// looks the same in light and dark mode.
 const UtterMark = ({
   width,
   height,
@@ -11,19 +13,24 @@ const UtterMark = ({
   <svg
     width={width || 24}
     height={height || 24}
-    viewBox="0 0 36 36"
+    viewBox="0 0 100 100"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
+    aria-hidden="true"
   >
-    <rect x="2" y="2" width="32" height="32" rx="9" className="fill-text" />
-    <g stroke="var(--color-background)" strokeWidth="2.6" strokeLinecap="round">
-      <path d="M10.5 15.5v5" />
-      <path d="M15.5 11v14" />
-      <path d="M20.5 13v10" />
-      <path d="M25.5 16v4" />
+    <rect width="100" height="100" rx="23" fill="#4f46e5" />
+    <path
+      d="M27 22V58A23 23 0 0 0 73 58V22"
+      stroke="#ffffff"
+      strokeWidth="13"
+      strokeLinecap="round"
+    />
+    <g fill="#c7d2fe">
+      <rect x="36.2" y="43" width="6.4" height="14" rx="3.2" />
+      <rect x="46.8" y="38" width="6.4" height="24" rx="3.2" />
+      <rect x="57.4" y="43" width="6.4" height="14" rx="3.2" />
     </g>
-    <circle cx="27" cy="9.5" r="2.2" className="fill-logo-primary" />
   </svg>
 );
 
