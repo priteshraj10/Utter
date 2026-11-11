@@ -453,7 +453,8 @@
   margin-top: 4px;
 }
 .sidle:hover,
-.sidle:focus-visible {
+.sidle:focus-visible,
+.sidle.notice {
   width: 132px;
   height: 30px;
   gap: 8px;
@@ -464,6 +465,12 @@
   box-shadow:
     0 0 0 2px var(--s-accent-soft),
     0 4px 14px -6px rgba(0, 0, 0, 0.45);
+}
+.sidle.notice {
+  border-color: rgba(245, 158, 11, 0.55);
+}
+.sidle.notice .sidle-bars {
+  display: none;
 }
 .sidle-bars {
   display: flex;
@@ -500,7 +507,8 @@
     opacity 160ms ease;
 }
 .sidle:hover .sidle-label,
-.sidle:focus-visible .sidle-label {
+.sidle:focus-visible .sidle-label,
+.sidle.notice .sidle-label {
   max-width: 100px;
   opacity: 1;
 }

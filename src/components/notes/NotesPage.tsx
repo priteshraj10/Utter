@@ -37,6 +37,9 @@ import {
   Wand2,
   X,
   RotateCcw,
+  MoreHorizontal,
+  ListFilter,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { commands, events, type Note } from "@/bindings";
@@ -73,6 +76,7 @@ import {
   toggleCheckboxLine,
   type NoteFilter,
 } from "./noteUtils";
+import { looksMistranscribed, plainPreview } from "./noteText";
 
 /** Backend event emitted whenever a note is created, edited or deleted. */
 const NOTES_CHANGED_EVENT = "notes-changed";
@@ -154,6 +158,43 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   const pendingSave = useRef<{ id: number; title: string; body: string }>();
 
   const selected = notes.find((n) => n.id === selectedId) ?? null;
+
+  // Notes whose recording was transcribed in a script the user doesn't speak
+  // (before the language fix, English came out in Devanagari).
+  const spokenKey = (getSetting("spoken_languages") ?? []).join(",");
+  const garbled = useMemo(
+    () =>
+      notes.filter((n) =>
+        looksMistranscribed(n, spokenKey ? spokenKey.split(",") : []),
+      ),
+    [notes, spokenKey],
+  );
+  const [fixing, setFixing] = useState(false);
+  const fixGarbled = async () => {
+    setFixing(true);
+    const ids = garbled.map((n) => n.id);
+    const progress = toast.loading(
+      t("notes.garbled.working", { done: 0, count: ids.length }),
+    );
+    let failed = 0;
+    for (const [i, id] of ids.entries()) {
+      const res = await commands.retranscribeNote(id);
+      if (res.status !== "ok") failed += 1;
+      toast.loading(
+        t("notes.garbled.working", { done: i + 1, count: ids.length }),
+        { id: progress },
+      );
+    }
+    setFixing(false);
+    await load();
+    if (failed > 0) {
+      toast.error(t("notes.garbled.someFailed", { count: failed }), {
+        id: progress,
+      });
+    } else {
+      toast.success(t("notes.garbled.done"), { id: progress });
+    }
+  };
   const isVideoNote = useMemo(
     () =>
       Boolean(
@@ -184,6 +225,14 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
       ),
     [notes, filter, query],
   );
+  // Open the newest note rather than an empty pane, so the latest
+  // conversation is the first thing you see.
+  useEffect(() => {
+    if (tab === "notes" && selectedId === null && visibleNotes.length > 0) {
+      setSelectedId(visibleNotes[0].id);
+    }
+  }, [tab, selectedId, visibleNotes]);
+
   const openActionCount = useMemo(
     () =>
       notes.reduce(
@@ -682,7 +731,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   const summaryItems = selected ? parseActionItems(selected) : [];
 
   return (
-    <div className="max-w-6xl w-full mx-auto flex flex-col gap-3 h-[calc(100vh-2rem)] min-h-[460px]">
+    <div className="max-w-6xl w-full mx-auto flex flex-col gap-3 h-full min-h-[460px]">
       {/* Top bar: shadcn Tabs, recording and media controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-1">
         <Tabs
@@ -729,43 +778,33 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
         </Tabs>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 shadow-2xs"
-            onClick={importMediaFile}
-            disabled={importingAudio}
-            title={t("notes.importMedia")}
-          >
-            {importingAudio ? (
-              <Loader2 size={13} className="animate-spin text-logo-primary" />
-            ) : (
-              <Video size={13} className="text-muted-foreground" />
-            )}
-            <span className="text-xs font-medium">
-              {importingAudio
-                ? t("notes.importingMedia")
-                : t("notes.importMedia")}
-            </span>
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 shadow-2xs"
-            onClick={createDigest}
-            disabled={digesting}
-            title={t("notes.digest.hint")}
-          >
-            {digesting ? (
-              <Loader2 size={13} className="animate-spin text-logo-primary" />
-            ) : (
-              <CalendarDays size={13} className="text-muted-foreground" />
-            )}
-            <span className="text-xs font-medium">
-              {digesting ? t("notes.digest.working") : t("notes.digest.button")}
-            </span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label={t("notes.more")}
+                title={t("notes.more")}
+                disabled={importingAudio || digesting}
+              >
+                {importingAudio || digesting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <MoreHorizontal size={14} />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuItem onClick={importMediaFile}>
+                <UploadCloud size={13} className="text-muted-foreground" />
+                <span>{t("notes.importMedia")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={createDigest}>
+                <CalendarDays size={13} className="text-muted-foreground" />
+                <span>{t("notes.digest.button")}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button
             variant={recording ? "warning" : "primary"}
@@ -841,46 +880,56 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
               >
                 <Plus size={14} />
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-xl px-2.5 shadow-2xs"
-                onClick={importMediaFile}
-                disabled={importingAudio}
-                title={t("notes.importMedia")}
-              >
-                {importingAudio ? (
-                  <Loader2
-                    size={14}
-                    className="animate-spin text-logo-primary"
-                  />
-                ) : (
-                  <UploadCloud size={14} />
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={filter === "all" ? "secondary" : "primary-soft"}
+                    size="sm"
+                    title={t("notes.filters.label")}
+                    aria-label={t("notes.filters.label")}
+                  >
+                    <ListFilter size={14} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {FILTERS.map((f) => (
+                    <DropdownMenuItem key={f} onClick={() => setFilter(f)}>
+                      <Check
+                        size={13}
+                        className={filter === f ? "opacity-100" : "opacity-0"}
+                      />
+                      <span>{t(`notes.filters.${f}`)}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            {/* Filter chips with shadcn Badge styling */}
-            <div className="flex flex-wrap gap-1">
-              {FILTERS.map((f) => {
-                const isActive = filter === f;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setFilter(f)}
-                    className="cursor-pointer"
-                  >
-                    <Badge
-                      variant={isActive ? "brand" : "outline"}
-                      className="text-[11px] px-2.5 py-0.5 transition-all"
-                    >
-                      {t(`notes.filters.${f}`)}
-                    </Badge>
-                  </button>
-                );
-              })}
-            </div>
+            {filter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setFilter("all")}
+                className="flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary cursor-pointer"
+              >
+                {t(`notes.filters.${filter}`)}
+                <X size={10} />
+              </button>
+            )}
+
+            {garbled.length > 0 && (
+              <div className="rounded-xl border border-warning/30 bg-warning-wash p-3 text-xs text-foreground space-y-2">
+                <p>{t("notes.garbled.message", { count: garbled.length })}</p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={fixGarbled}
+                  disabled={fixing}
+                >
+                  {fixing && <Loader2 size={12} className="animate-spin" />}
+                  {t("notes.garbled.fix", { count: garbled.length })}
+                </Button>
+              </div>
+            )}
 
             {/* Note Cards List */}
             <div className="flex-1 overflow-y-auto space-y-1.5 p-1 rounded-2xl border border-line bg-surface/40">
@@ -897,7 +946,7 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
                   ? Video
                   : (KIND_ICONS[note.kind] ?? FileText);
                 const isSelected = note.id === selectedId;
-                const preview = (note.summary || note.body).trim();
+                const preview = plainPreview(note.summary || note.body);
 
                 return (
                   <Card

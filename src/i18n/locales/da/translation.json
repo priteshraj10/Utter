@@ -994,7 +994,11 @@
       "ai": "AI"
     },
     "idleHint": "Click to dictate",
-    "idleTitle": "Click to dictate · right-click to hide for an hour"
+    "idleTitle": "Click to dictate · right-click to hide for an hour",
+    "notice": {
+      "empty": "Didn’t hear you",
+      "silent": "Your mic is silent"
+    }
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",
@@ -1044,7 +1048,8 @@
       "voice": "Voice",
       "text": "Text",
       "digest": "Digests",
-      "video": "Videos"
+      "video": "Videos",
+      "label": "Filter notes"
     },
     "templates": {
       "label": "Summary template",
@@ -1147,7 +1152,18 @@
     },
     "retranscribe": "Transcribe again",
     "retranscribing": "Transcribing the recording again…",
-    "retranscribed": "Transcribed again and re-summarized"
+    "retranscribed": "Transcribed again and re-summarized",
+    "more": "More",
+    "garbled": {
+      "message_one": "{{count}} recorded note looks transcribed in the wrong language.",
+      "message_other": "{{count}} recorded notes look transcribed in the wrong language.",
+      "fix_one": "Transcribe it again",
+      "fix_other": "Transcribe them again",
+      "working": "Transcribing again… {{done}} of {{count}}",
+      "done": "Notes transcribed again and re-summarized",
+      "someFailed_one": "{{count}} note couldn’t be transcribed again",
+      "someFailed_other": "{{count}} notes couldn’t be transcribed again"
+    }
   },
   "flow": {
     "saveAsNote": "Save to Notes",
@@ -1205,6 +1221,13 @@
     "floatingBarHidden": {
       "title": "Floating bar hidden for 1 hour",
       "description": "Your shortcut still works. Turn the bar off for good in Settings."
+    },
+    "noSpeech": {
+      "emptyTitle": "Utter didn’t hear any speech",
+      "silentTitle": "Your microphone is sending silence",
+      "description": "Listening to: {{mic}}. Bluetooth headsets often sound too quiet for dictation; try your computer’s built-in mic.",
+      "action": "Change microphone",
+      "defaultMic": "the system default microphone"
     }
   },
   "personalize": {

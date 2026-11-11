@@ -66,6 +66,9 @@ const RecordingOverlay: React.FC = () => {
   const [modeBadge, setModeBadge] = useState<string | null>(null);
   // Which shortcut started this recording, so the pill says where words go.
   const [bindingId, setBindingId] = useState<string | null>(null);
+  // A short message on the resting bar after a dictation heard nothing.
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout>>();
   // True once live text overflows the cap. A top overlay fades its top edge only
   // while overflowing, so the resting first line stays crisp flush under the pill.
   const [overflowing, setOverflowing] = useState(false);
@@ -155,6 +158,20 @@ const RecordingOverlay: React.FC = () => {
         },
       );
 
+      const unlistenComplete = await events.transcriptionCompleteEvent.listen(
+        (event) => {
+          const { outcome } = event.payload;
+          if (outcome !== "empty" && outcome !== "silent") return;
+          clearTimeout(noticeTimer.current);
+          setNotice(
+            outcome === "silent"
+              ? t("overlay.notice.silent")
+              : t("overlay.notice.empty"),
+          );
+          noticeTimer.current = setTimeout(() => setNotice(null), 3500);
+        },
+      );
+
       const unlistenPhase = await events.streamPhaseEvent.listen((event) => {
         const payload: StreamPhaseEvent = event.payload;
         setPhase(payload.phase);
@@ -196,6 +213,8 @@ const RecordingOverlay: React.FC = () => {
         unlistenStream();
         unlistenPhase();
         unlistenRecording();
+        unlistenComplete();
+        clearTimeout(noticeTimer.current);
         unlistenModel();
         clearTimeout(modelLoadTimerRef.current);
       };
@@ -342,7 +361,7 @@ const RecordingOverlay: React.FC = () => {
       >
         <button
           type="button"
-          className="sidle"
+          className={`sidle ${notice ? "notice" : ""}`}
           title={t("overlay.idleTitle")}
           aria-label={t("overlay.idleHint")}
           onClick={() => void commands.toggleDictation()}
@@ -356,7 +375,7 @@ const RecordingOverlay: React.FC = () => {
             <i />
             <i />
           </span>
-          <span className="sidle-label">{t("overlay.idleHint")}</span>
+          <span className="sidle-label">{notice ?? t("overlay.idleHint")}</span>
         </button>
       </div>
     );

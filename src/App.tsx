@@ -36,10 +36,10 @@ import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
-import { commands } from "@/bindings";
+import { commands, events } from "@/bindings";
 import { deleteRetiredModel } from "@/lib/models/retired";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
-import { NAVIGATE_EVENT } from "@/lib/navigation";
+import { NAVIGATE_EVENT, navigateTo } from "@/lib/navigation";
 
 // flow is first-run onboarding; the rest are single screens for returning users.
 type OnboardingStep =
@@ -250,6 +250,45 @@ function App() {
       unlistenKept.then((fn) => fn());
       unlistenNote.then((fn) => fn());
       unlistenBar.then((fn) => fn());
+    };
+  }, [t]);
+
+  // A dictation that heard nothing used to fail silently. Name the mic and
+  // offer to change it: on a silent mic at once, otherwise on the second
+  // empty result in a row (a stray shortcut tap shouldn't nag).
+  const emptyStreak = useRef(0);
+  useEffect(() => {
+    const unlisten = events.transcriptionCompleteEvent.listen((event) => {
+      const { outcome } = event.payload;
+      if (outcome !== "empty" && outcome !== "silent") {
+        emptyStreak.current = 0;
+        return;
+      }
+      emptyStreak.current += 1;
+      if (outcome === "empty" && emptyStreak.current < 2) return;
+      const { settings: current, audioDevices } = useSettingsStore.getState();
+      const chosen = current?.selected_microphone;
+      const mic =
+        audioDevices.find((d) => d.name === chosen)?.name ??
+        audioDevices.find((d) => d.is_default)?.name ??
+        chosen ??
+        t("toasts.noSpeech.defaultMic");
+      toast.warning(
+        outcome === "silent"
+          ? t("toasts.noSpeech.silentTitle")
+          : t("toasts.noSpeech.emptyTitle"),
+        {
+          description: t("toasts.noSpeech.description", { mic }),
+          duration: 10000,
+          action: {
+            label: t("toasts.noSpeech.action"),
+            onClick: () => navigateTo("general", "general"),
+          },
+        },
+      );
+    });
+    return () => {
+      unlisten.then((fn) => fn());
     };
   }, [t]);
 
@@ -519,9 +558,9 @@ function App() {
           {/* Scrollable content area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div ref={settingsScrollRef} className="flex-1 overflow-y-auto">
-              {/* Models fills the window: its table scrolls, not the page. */}
+              {/* Models and Notes fill the window: their lists scroll, not the page. */}
               <div
-                className={`flex flex-col items-center px-8 py-6 gap-4 ${currentSection === "models" ? "h-full" : ""}`}
+                className={`flex flex-col items-center px-8 py-6 gap-4 ${currentSection === "models" || currentSection === "notes" ? "h-full" : ""}`}
               >
                 <SecureInputWarning />
                 {renderSettingsContent(
