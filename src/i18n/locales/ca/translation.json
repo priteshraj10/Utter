@@ -396,7 +396,12 @@
           "push_to_talk": "Enregistreu mentre manteniu premuda la drecera",
           "toggle": "Premeu la drecera per iniciar l'enregistrament i torneu-la a prémer per aturar-lo"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "Models",

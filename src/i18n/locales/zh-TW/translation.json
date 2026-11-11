@@ -396,7 +396,12 @@
           "push_to_talk": "按住快捷鍵期間錄音",
           "toggle": "輕按快捷鍵開始錄音，再次輕按停止"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "模型",

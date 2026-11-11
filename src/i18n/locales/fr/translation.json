@@ -396,7 +396,12 @@
           "push_to_talk": "Enregistre tant que le raccourci est maintenu",
           "toggle": "Appuyez sur le raccourci pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "Modèles",

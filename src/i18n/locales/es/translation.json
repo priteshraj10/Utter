@@ -396,7 +396,12 @@
           "push_to_talk": "Graba mientras mantienes pulsado el atajo",
           "toggle": "Toca el atajo para empezar a grabar, tócalo de nuevo para detener"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "Modelos",

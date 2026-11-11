@@ -396,7 +396,12 @@
           "push_to_talk": "Записва, докато държите комбинацията натисната",
           "toggle": "Натиснете кратко комбинацията, за да започне записът, и отново, за да спре"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "Модели",

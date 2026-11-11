@@ -396,7 +396,12 @@
           "push_to_talk": "단축키를 누르고 있는 동안 녹음합니다",
           "toggle": "단축키를 탭하면 녹음을 시작하고, 다시 탭하면 중지합니다"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "모델",

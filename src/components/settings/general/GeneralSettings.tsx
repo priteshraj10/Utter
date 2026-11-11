@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { type } from "@tauri-apps/plugin-os";
 import { MicrophoneSelector } from "../MicrophoneSelector";
@@ -8,6 +9,7 @@ import { SettingsGroup } from "../../ui/SettingsGroup";
 import { OutputDeviceSelector } from "../OutputDeviceSelector";
 import { ShortcutActivationSetting } from "../ShortcutActivation";
 import { AudioFeedback } from "../AudioFeedback";
+import { AutostartToggle } from "../AutostartToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
@@ -20,6 +22,7 @@ export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { audioFeedbackEnabled, getSetting } = useSettings();
   const isLinux = type() === "linux";
+  const [showMore, setShowMore] = useState(false);
   // The cleanup and command shortcuts do nothing without an AI provider.
   const aiEnabled = getSetting("post_process_enabled") ?? false;
   const speaksChinese =
@@ -28,37 +31,73 @@ export const GeneralSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.general.shortcut.title")}>
+      {/* The few things most people change. */}
+      <SettingsGroup title={t("settings.general.essentials")}>
         <ShortcutInput shortcutId="transcribe" grouped={true} />
         <ShortcutActivationSetting grouped={true} />
-        <ShortcutInput shortcutId="voice_note" grouped={true} />
-        {aiEnabled && (
-          <>
-            <ShortcutInput
-              shortcutId="transcribe_with_post_process"
-              grouped={true}
-            />
-            <ShortcutInput shortcutId="command_mode" grouped={true} />
-          </>
-        )}
-        {!isLinux && <ShortcutInput shortcutId="cancel" grouped={true} />}
-      </SettingsGroup>
-
-      <ModelSettingsCard />
-
-      <SettingsGroup title={t("settings.languages.title")}>
-        <PreferredLanguages grouped={true} />
-        {speaksChinese && <ChineseScriptSetting grouped={true} />}
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.sound.title")}>
         <MicrophoneSelector grouped={true} />
-        <ChannelSelector grouped={true} />
-        <MuteWhileRecording grouped={true} />
+        <PreferredLanguages grouped={true} />
         <AudioFeedback grouped={true} />
-        <OutputDeviceSelector grouped={true} disabled={!audioFeedbackEnabled} />
-        <VolumeSlider disabled={!audioFeedbackEnabled} />
+        <AutostartToggle grouped={true} />
       </SettingsGroup>
+
+      <button
+        type="button"
+        onClick={() => setShowMore(!showMore)}
+        aria-expanded={showMore}
+        className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-start shadow-xs transition-colors hover:bg-accent/50 cursor-pointer"
+      >
+        <span>
+          <span className="block text-sm font-medium text-foreground">
+            {showMore
+              ? t("settings.general.fewerOptions")
+              : t("settings.general.moreOptions")}
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {t("settings.general.moreOptionsHint")}
+          </span>
+        </span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-muted-foreground transition-transform ${showMore ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {showMore && (
+        <div className="space-y-6">
+          <SettingsGroup title={t("settings.general.otherShortcuts")}>
+            <ShortcutInput shortcutId="voice_note" grouped={true} />
+            {aiEnabled && (
+              <>
+                <ShortcutInput
+                  shortcutId="transcribe_with_post_process"
+                  grouped={true}
+                />
+                <ShortcutInput shortcutId="command_mode" grouped={true} />
+              </>
+            )}
+            {!isLinux && <ShortcutInput shortcutId="cancel" grouped={true} />}
+          </SettingsGroup>
+
+          <ModelSettingsCard />
+
+          {speaksChinese && (
+            <SettingsGroup title={t("settings.languages.title")}>
+              <ChineseScriptSetting grouped={true} />
+            </SettingsGroup>
+          )}
+
+          <SettingsGroup title={t("settings.sound.title")}>
+            <ChannelSelector grouped={true} />
+            <MuteWhileRecording grouped={true} />
+            <OutputDeviceSelector
+              grouped={true}
+              disabled={!audioFeedbackEnabled}
+            />
+            <VolumeSlider disabled={!audioFeedbackEnabled} />
+          </SettingsGroup>
+        </div>
+      )}
     </div>
   );
 };

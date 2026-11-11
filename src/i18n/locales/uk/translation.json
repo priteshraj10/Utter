@@ -396,7 +396,12 @@
           "push_to_talk": "Записує, поки комбінація клавіш утримується",
           "toggle": "Натисніть комбінацію клавіш, щоб почати запис, натисніть ще раз, щоб зупинити"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "Моделі",

@@ -378,14 +378,14 @@
         "stopDetectorDownload": "Stop downloading the language detector"
       },
       "preferredLanguages": {
-        "title": "Preferred languages",
-        "description": "The languages you speak. Used to recommend models.",
+        "title": "Languages you speak",
+        "description": "Pick one and Utter always listens for it. Pick several and it detects which one you’re using.",
         "noMatch": "No language matches “{{query}}”",
         "weak": "No model recognizes {{languages}} well yet."
       },
       "shortcutActivation": {
         "title": "Shortcut behavior",
-        "description": "Choose how the transcribe shortcut starts and stops recording.",
+        "description": "Hold the shortcut while you talk, tap it to start and stop, or let Utter decide by how long you press.",
         "options": {
           "holdOrToggle": "Auto",
           "pushToTalk": "Hold",
@@ -396,7 +396,12 @@
           "push_to_talk": "Records while you hold the shortcut",
           "toggle": "Tap the shortcut to start recording, tap again to stop"
         }
-      }
+      },
+      "essentials": "Essentials",
+      "moreOptions": "More options",
+      "fewerOptions": "Fewer options",
+      "moreOptionsHint": "Other shortcuts, speech model, and sound details",
+      "otherShortcuts": "Other shortcuts"
     },
     "models": {
       "title": "Models",
@@ -447,9 +452,9 @@
       "title": "Sound",
       "microphone": {
         "title": "Microphone",
-        "description": "Select your preferred microphone device",
-        "placeholder": "Select microphone...",
-        "loading": "Loading..."
+        "description": "The microphone Utter listens to.",
+        "placeholder": "Choose a microphone…",
+        "loading": "Loading…"
       },
       "channel": {
         "title": "Input Channel",
@@ -458,8 +463,8 @@
         "channel": "Channel {{n}}"
       },
       "audioFeedback": {
-        "label": "Audio Feedback",
-        "description": "Play sound when recording starts and stops"
+        "label": "Sounds",
+        "description": "Play a short sound when recording starts and stops."
       },
       "outputDevice": {
         "title": "Output Device",
@@ -502,8 +507,8 @@
         "description": "Launch to system tray without opening the window."
       },
       "autostart": {
-        "label": "Launch on Startup",
-        "description": "Automatically start Utter when you log in to your computer."
+        "label": "Open at login",
+        "description": "Start Utter automatically when you log in, so dictation is always ready."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
