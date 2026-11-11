@@ -263,6 +263,21 @@ pub fn unhide_floating_bar(app: AppHandle) {
     crate::overlay::unhide_floating_bar(&app);
 }
 
+/// Whether to use the built-in mic when the default input is Bluetooth.
+#[tauri::command]
+#[specta::specta]
+pub fn change_prefer_builtin_mic_setting(
+    app: AppHandle,
+    audio: State<'_, Arc<crate::managers::audio::AudioRecordingManager>>,
+    enabled: bool,
+) {
+    let mut s = settings::get_settings(&app);
+    s.prefer_builtin_mic = enabled;
+    settings::write_settings(&app, s);
+    // The cached device may be the one this setting picked.
+    audio.invalidate_device_cache();
+}
+
 /// Turns the floating bar on or off.
 #[tauri::command]
 #[specta::specta]

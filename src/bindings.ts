@@ -851,6 +851,12 @@ async unhideFloatingBar() : Promise<void> {
     await TAURI_INVOKE("unhide_floating_bar");
 },
 /**
+ * Whether to use the built-in mic when the default input is Bluetooth.
+ */
+async changePreferBuiltinMicSetting(enabled: boolean) : Promise<void> {
+    await TAURI_INVOKE("change_prefer_builtin_mic_setting", { enabled });
+},
+/**
  * Turns the floating bar on or off.
  */
 async changeFloatingBarSetting(enabled: boolean) : Promise<void> {
@@ -1422,6 +1428,12 @@ overlay_style?: OverlayStyle;
  * dictate, and it grows into the recording overlay while you speak.
  */
 floating_bar?: boolean; 
+/**
+ * With no microphone chosen, record from the built-in mic when the
+ * default input is a Bluetooth headset (whose call-quality mic often
+ * hears nothing usable).
+ */
+prefer_builtin_mic?: boolean; 
 /**
  * Run AI cleanup on every dictation, not only the post-processing
  * shortcut. Needs post-processing to be enabled with a provider.

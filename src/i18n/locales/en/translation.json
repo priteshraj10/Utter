@@ -479,6 +479,10 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "preferBuiltinMic": {
+        "label": "Use built-in mic with Bluetooth headphones",
+        "description": "Headphone mics like AirPods switch to call quality and often come through too quiet to dictate. Utter uses your Mac’s microphone instead, and your headphones keep full sound."
       }
     },
     "advanced": {
@@ -1225,7 +1229,7 @@
     "noSpeech": {
       "emptyTitle": "Utter didn’t hear any speech",
       "silentTitle": "Your microphone is sending silence",
-      "description": "Listening to: {{mic}}. Bluetooth headsets often sound too quiet for dictation; try your computer’s built-in mic.",
+      "description": "Listening to: {{mic}}. If that’s a headset, choose your computer’s built-in mic.",
       "action": "Change microphone",
       "defaultMic": "the system default microphone"
     }

@@ -167,6 +167,10 @@ objc2 = "0.6"
 objc2-foundation = "0.3"
 objc2-app-kit = "0.3"
 objc2-service-management = "0.3.2"
+# Detecting a Bluetooth default microphone (helpers/bluetooth_mic.rs). Same
+# versions and features handy-recorder already uses.
+objc2-core-audio = { version = "0.3.2", default-features = false, features = ["std", "AudioHardware"] }
+objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFString"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }

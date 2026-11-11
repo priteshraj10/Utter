@@ -479,6 +479,10 @@
       "volume": {
         "title": "音量",
         "description": "調整聲音回饋的音量"
+      },
+      "preferBuiltinMic": {
+        "label": "Use built-in mic with Bluetooth headphones",
+        "description": "Headphone mics like AirPods switch to call quality and often come through too quiet to dictate. Utter uses your Mac’s microphone instead, and your headphones keep full sound."
       }
     },
     "advanced": {

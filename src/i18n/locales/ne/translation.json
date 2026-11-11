@@ -479,6 +479,10 @@
       "volume": {
         "title": "भोल्युम",
         "description": "अडियो फिडब्याक आवाजको भोल्युम मिलाउनुहोस्"
+      },
+      "preferBuiltinMic": {
+        "label": "Use built-in mic with Bluetooth headphones",
+        "description": "Headphone mics like AirPods switch to call quality and often come through too quiet to dictate. Utter uses your Mac’s microphone instead, and your headphones keep full sound."
       }
     },
     "advanced": {

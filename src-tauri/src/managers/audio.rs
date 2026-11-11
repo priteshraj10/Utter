@@ -265,6 +265,8 @@ enum DesiredMicrophone {
     Default,
     Selected(String),
     Clamshell(String),
+    /// The built-in mic, because the default input is a Bluetooth headset.
+    BuiltIn(String),
 }
 
 /// Result of resolving the persisted preference to a recorder device ID.
@@ -568,6 +570,18 @@ impl AudioRecordingManager {
         }
         match &settings.selected_microphone {
             Some(name) => DesiredMicrophone::Selected(name.clone()),
+            None if settings.prefer_builtin_mic => {
+                match crate::helpers::bluetooth_mic::builtin_mic_instead_of_bluetooth() {
+                    Some(builtin) => {
+                        debug!(
+                            "device resolve: default input is Bluetooth -> built-in '{}'",
+                            builtin
+                        );
+                        DesiredMicrophone::BuiltIn(builtin)
+                    }
+                    None => DesiredMicrophone::Default,
+                }
+            }
             None => DesiredMicrophone::Default,
         }
     }
@@ -588,7 +602,8 @@ impl AudioRecordingManager {
                 };
             }
             DesiredMicrophone::Selected(name) => (name.clone(), Some(name)),
-            DesiredMicrophone::Clamshell(name) => (name, None),
+            // Not the user's own choice: if it's missing, quietly use the default.
+            DesiredMicrophone::Clamshell(name) | DesiredMicrophone::BuiltIn(name) => (name, None),
         };
 
         // Cache hit: skip the enumeration. A stale ID (device unplugged)

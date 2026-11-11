@@ -38,6 +38,16 @@ export const GeneralSettings: React.FC = () => {
         <ShortcutInput shortcutId="transcribe" grouped={true} />
         <ShortcutActivationSetting grouped={true} />
         <MicrophoneSelector grouped={true} />
+        {!getSetting("selected_microphone") && (
+          <ToggleSwitch
+            grouped
+            checked={getSetting("prefer_builtin_mic") ?? true}
+            onChange={(on) => updateSetting("prefer_builtin_mic", on)}
+            isUpdating={isUpdating("prefer_builtin_mic")}
+            label={t("settings.sound.preferBuiltinMic.label")}
+            description={t("settings.sound.preferBuiltinMic.description")}
+          />
+        )}
         <PreferredLanguages grouped={true} />
         <AudioFeedback grouped={true} />
         <AutostartToggle grouped={true} />

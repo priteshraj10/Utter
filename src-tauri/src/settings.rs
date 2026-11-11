@@ -583,6 +583,11 @@ pub struct AppSettings {
     /// dictate, and it grows into the recording overlay while you speak.
     #[serde(default = "default_floating_bar")]
     pub floating_bar: bool,
+    /// With no microphone chosen, record from the built-in mic when the
+    /// default input is a Bluetooth headset (whose call-quality mic often
+    /// hears nothing usable).
+    #[serde(default = "default_prefer_builtin_mic")]
+    pub prefer_builtin_mic: bool,
     /// Run AI cleanup on every dictation, not only the post-processing
     /// shortcut. Needs post-processing to be enabled with a provider.
     #[serde(default)]
@@ -661,6 +666,10 @@ fn default_overlay_position() -> OverlayPosition {
 }
 
 fn default_floating_bar() -> bool {
+    true
+}
+
+fn default_prefer_builtin_mic() -> bool {
     true
 }
 
@@ -1214,6 +1223,7 @@ pub fn get_default_settings() -> AppSettings {
         language_detection_window_secs: default_language_detection_window_secs(),
         overlay_style: default_overlay_style(),
         floating_bar: default_floating_bar(),
+        prefer_builtin_mic: default_prefer_builtin_mic(),
         auto_cleanup: default_post_process_enabled(),
         whisper_mode: false,
         voice_commands: true,

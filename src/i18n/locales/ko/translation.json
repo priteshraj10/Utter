@@ -479,6 +479,10 @@
       "volume": {
         "title": "볼륨",
         "description": "오디오 피드백 사운드의 볼륨 조절"
+      },
+      "preferBuiltinMic": {
+        "label": "Use built-in mic with Bluetooth headphones",
+        "description": "Headphone mics like AirPods switch to call quality and often come through too quiet to dictate. Utter uses your Mac’s microphone instead, and your headphones keep full sound."
       }
     },
     "advanced": {
