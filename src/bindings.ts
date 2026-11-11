@@ -826,6 +826,36 @@ async changeVoiceCommandsSetting(enabled: boolean) : Promise<Result<null, string
 async toggleVoiceNote() : Promise<void> {
     await TAURI_INVOKE("toggle_voice_note");
 },
+/**
+ * Starts or stops a dictation from the floating bar, like the shortcut.
+ */
+async toggleDictation() : Promise<void> {
+    await TAURI_INVOKE("toggle_dictation");
+},
+/**
+ * Shows the resting floating bar (if it is on and not hidden).
+ */
+async showFloatingBar() : Promise<void> {
+    await TAURI_INVOKE("show_floating_bar");
+},
+/**
+ * Hides the floating bar for `minutes`, then brings it back.
+ */
+async hideFloatingBar(minutes: number) : Promise<void> {
+    await TAURI_INVOKE("hide_floating_bar", { minutes });
+},
+/**
+ * Brings a hidden floating bar back now.
+ */
+async unhideFloatingBar() : Promise<void> {
+    await TAURI_INVOKE("unhide_floating_bar");
+},
+/**
+ * Turns the floating bar on or off.
+ */
+async changeFloatingBarSetting(enabled: boolean) : Promise<void> {
+    await TAURI_INVOKE("change_floating_bar_setting", { enabled });
+},
 async setSnippets(snippets: Snippet[]) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("set_snippets", { snippets }) };
@@ -1387,6 +1417,11 @@ language_detection_window_secs?: number;
  * `overlay_position` (position `none` → style `None`).
  */
 overlay_style?: OverlayStyle; 
+/**
+ * Keep a small floating bar on screen between recordings: click it to
+ * dictate, and it grows into the recording overlay while you speak.
+ */
+floating_bar?: boolean; 
 /**
  * Run AI cleanup on every dictation, not only the post-processing
  * shortcut. Needs post-processing to be enabled with a provider.

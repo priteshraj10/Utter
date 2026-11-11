@@ -96,7 +96,7 @@ const EngineCard: React.FC = () => {
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => navigateTo("advanced")}
+          onClick={() => navigateTo("general", "advanced")}
         >
           {providerSet
             ? t("personalize.engine.change")

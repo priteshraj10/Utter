@@ -13,7 +13,12 @@ import i18n, { syncLanguageFromSettings } from "@/i18n";
 import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
+type OverlayState =
+  | "idle"
+  | "recording"
+  | "streaming"
+  | "transcribing"
+  | "processing";
 
 // Number of reactive bars in the waveform (the simple, smoothed style shared by
 // every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
@@ -326,6 +331,36 @@ const RecordingOverlay: React.FC = () => {
     (state === "streaming" && workKind === "polishing")
       ? t("overlay.processing")
       : transcribingLabel;
+
+  // Resting floating bar between recordings: a slim pill that opens into a
+  // "Click to dictate" button on hover or focus. Right-click hides it.
+  if (state === "idle") {
+    return (
+      <div
+        dir={direction}
+        className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
+      >
+        <button
+          type="button"
+          className="sidle"
+          title={t("overlay.idleTitle")}
+          aria-label={t("overlay.idleHint")}
+          onClick={() => void commands.toggleDictation()}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            void commands.hideFloatingBar(60);
+          }}
+        >
+          <span className="sidle-bars" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="sidle-label">{t("overlay.idleHint")}</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div

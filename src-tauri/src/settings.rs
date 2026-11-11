@@ -579,6 +579,10 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    /// Keep a small floating bar on screen between recordings: click it to
+    /// dictate, and it grows into the recording overlay while you speak.
+    #[serde(default = "default_floating_bar")]
+    pub floating_bar: bool,
     /// Run AI cleanup on every dictation, not only the post-processing
     /// shortcut. Needs post-processing to be enabled with a provider.
     #[serde(default)]
@@ -654,6 +658,10 @@ fn default_overlay_position() -> OverlayPosition {
     // Position only matters when the overlay is shown; whether it shows at all is
     // `overlay_style` (Linux defaults that to None). So a single default suffices.
     OverlayPosition::Bottom
+}
+
+fn default_floating_bar() -> bool {
+    true
 }
 
 fn default_overlay_style() -> OverlayStyle {
@@ -1205,6 +1213,7 @@ pub fn get_default_settings() -> AppSettings {
         language_detection: LanguageDetectionMode::default(),
         language_detection_window_secs: default_language_detection_window_secs(),
         overlay_style: default_overlay_style(),
+        floating_bar: default_floating_bar(),
         auto_cleanup: default_post_process_enabled(),
         whisper_mode: false,
         voice_commands: true,

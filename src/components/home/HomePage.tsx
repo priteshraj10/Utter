@@ -58,8 +58,19 @@ export const HomePage: React.FC = () => {
       ]
     : [];
 
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12
+      ? t("home.greeting.morning")
+      : hour < 18
+        ? t("home.greeting.afternoon")
+        : t("home.greeting.evening");
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <h1 className="px-1 pt-2 text-2xl font-semibold tracking-tight text-foreground">
+        {greeting}
+      </h1>
       <Card>
         <CardHeader className="gap-1">
           <CardTitle>{t("home.title")}</CardTitle>

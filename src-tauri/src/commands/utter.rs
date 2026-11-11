@@ -5,7 +5,7 @@ use crate::managers::history::{HistoryEntry, HistoryManager, UsageStats};
 use crate::managers::notes::{Note, NotesManager};
 use crate::settings::{self, AppStyle, Snippet};
 use std::sync::Arc;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 #[tauri::command]
 #[specta::specta]
@@ -232,6 +232,49 @@ pub fn change_voice_commands_setting(app: AppHandle, enabled: bool) -> Result<()
 #[specta::specta]
 pub fn toggle_voice_note(app: AppHandle) {
     crate::signal_handle::send_transcription_input(&app, "voice_note", "UI");
+}
+
+/// Starts or stops a dictation from the floating bar, like the shortcut.
+#[tauri::command]
+#[specta::specta]
+pub fn toggle_dictation(app: AppHandle) {
+    crate::signal_handle::send_transcription_input(&app, "transcribe", "Floating bar");
+}
+
+/// Shows the resting floating bar (if it is on and not hidden).
+#[tauri::command]
+#[specta::specta]
+pub fn show_floating_bar(app: AppHandle) {
+    crate::overlay::show_floating_bar(&app);
+}
+
+/// Hides the floating bar for `minutes`, then brings it back.
+#[tauri::command]
+#[specta::specta]
+pub fn hide_floating_bar(app: AppHandle, minutes: u32) {
+    crate::overlay::hide_floating_bar_for(&app, u64::from(minutes.clamp(1, 24 * 60)));
+    let _ = app.emit("floating-bar-hidden", minutes);
+}
+
+/// Brings a hidden floating bar back now.
+#[tauri::command]
+#[specta::specta]
+pub fn unhide_floating_bar(app: AppHandle) {
+    crate::overlay::unhide_floating_bar(&app);
+}
+
+/// Turns the floating bar on or off.
+#[tauri::command]
+#[specta::specta]
+pub fn change_floating_bar_setting(app: AppHandle, enabled: bool) {
+    let mut s = settings::get_settings(&app);
+    s.floating_bar = enabled;
+    settings::write_settings(&app, s);
+    if enabled {
+        crate::overlay::unhide_floating_bar(&app);
+    } else if !crate::tray::dictation_in_progress(&app) {
+        crate::overlay::hide_overlay_window(&app);
+    }
 }
 
 #[tauri::command]

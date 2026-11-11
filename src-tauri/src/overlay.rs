@@ -55,10 +55,66 @@ const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 #[allow(dead_code)]
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
+// The resting floating bar: a small window, so it covers as little of the
+// app underneath as possible. Fits the hovered pill (--ov-idle-open-w/h).
+const IDLE_WIDTH: f64 = 140.0;
+const IDLE_HEIGHT: f64 = 40.0;
+
 /// Overlay window size (logical) for a given UI state.
-/// Utter matches Wispr Flow's sleek compact floating capsule.
-fn overlay_dimensions(_state: &str) -> (f64, f64) {
-    (OVERLAY_WIDTH, OVERLAY_HEIGHT)
+fn overlay_dimensions(state: &str) -> (f64, f64) {
+    match state {
+        "idle" => (IDLE_WIDTH, IDLE_HEIGHT),
+        _ => (OVERLAY_WIDTH, OVERLAY_HEIGHT),
+    }
+}
+
+/// Until when (unix seconds) the user hid the floating bar; 0 = not hidden.
+static FLOATING_BAR_HIDDEN_UNTIL: AtomicU64 = AtomicU64::new(0);
+
+fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Whether the resting floating bar should be on screen between recordings.
+pub fn wants_floating_bar(app_handle: &AppHandle) -> bool {
+    let settings = settings::get_settings(app_handle);
+    settings.floating_bar
+        && settings.overlay_style != OverlayStyle::None
+        && settings.onboarding_completed
+        && now_secs() >= FLOATING_BAR_HIDDEN_UNTIL.load(Ordering::SeqCst)
+}
+
+/// Shows the resting floating bar, unless it's off, hidden, or a recording
+/// is using the overlay.
+pub fn show_floating_bar(app_handle: &AppHandle) {
+    if wants_floating_bar(app_handle) && !crate::tray::dictation_in_progress(app_handle) {
+        show_overlay_state(app_handle, "idle");
+    }
+}
+
+/// Hides the floating bar for `minutes`; it comes back on its own after.
+pub fn hide_floating_bar_for(app_handle: &AppHandle, minutes: u64) {
+    let until = now_secs() + minutes * 60;
+    FLOATING_BAR_HIDDEN_UNTIL.store(until, Ordering::SeqCst);
+    hide_overlay_window(app_handle);
+    let app = app_handle.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(minutes * 60));
+        // A later hide (or an undo) owns the bar now.
+        if FLOATING_BAR_HIDDEN_UNTIL.load(Ordering::SeqCst) == until {
+            FLOATING_BAR_HIDDEN_UNTIL.store(0, Ordering::SeqCst);
+            show_floating_bar(&app);
+        }
+    });
+}
+
+/// Brings a hidden floating bar back now (Undo, or turning it on).
+pub fn unhide_floating_bar(app_handle: &AppHandle) {
+    FLOATING_BAR_HIDDEN_UNTIL.store(0, Ordering::SeqCst);
+    show_floating_bar(app_handle);
 }
 
 static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
@@ -686,7 +742,18 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
 static OVERLAY_SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Hides the recording overlay window with fade-out animation
+/// Ends the recording overlay: it settles back into the resting floating bar
+/// when that is on, and hides otherwise.
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
+    if wants_floating_bar(app_handle) {
+        show_overlay_state(app_handle, "idle");
+        return;
+    }
+    hide_overlay_window(app_handle);
+}
+
+/// Fades the overlay out and hides its window.
+pub fn hide_overlay_window(app_handle: &AppHandle) {
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {

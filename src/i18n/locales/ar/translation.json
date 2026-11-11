@@ -11,15 +11,15 @@
   },
   "sidebar": {
     "models": "النماذج",
-    "advanced": "متقدم",
     "postProcessing": "معالجة لاحقة",
     "debug": "تصحيح الأخطاء",
-    "about": "حول",
     "notes": "Notes",
     "dictate": "Dictate",
     "home": "Home",
     "settings": "Settings",
-    "personalize": "Personalize"
+    "dictionary": "Dictionary",
+    "snippets": "Snippets",
+    "style": "Style"
   },
   "onboarding": {
     "customModelDescription": "غير مدعوم رسميًا",
@@ -401,7 +401,11 @@
       "moreOptions": "More options",
       "fewerOptions": "Fewer options",
       "moreOptionsHint": "Other shortcuts, speech model, and sound details",
-      "otherShortcuts": "Other shortcuts"
+      "otherShortcuts": "Other shortcuts",
+      "floatingBar": {
+        "label": "Floating bar",
+        "description": "A small bar at the bottom of your screen. Click it to dictate; right-click to hide it for an hour."
+      }
     },
     "models": {
       "title": "النماذج",
@@ -912,6 +916,11 @@
           "details": ".يستخدم Utter برنامج ggml لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
         }
       }
+    },
+    "tabs": {
+      "general": "General",
+      "advanced": "Advanced",
+      "about": "About"
     }
   },
   "footer": {
@@ -983,7 +992,9 @@
       "note": "Note",
       "command": "Command",
       "ai": "AI"
-    }
+    },
+    "idleHint": "Click to dictate",
+    "idleTitle": "Click to dictate · right-click to hide for an hour"
   },
   "secureInput": {
     "blockedWithCulprit_one": "قد يحظر {{name}} اختصارًا واحدًا",
@@ -1171,7 +1182,12 @@
     "playRecording": "Play recording",
     "hideRecording": "Hide recording",
     "deleted": "Dictation deleted",
-    "undo": "Undo"
+    "undo": "Undo",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    }
   },
   "app": {
     "loading": "Loading…"
@@ -1185,17 +1201,14 @@
     "noteSaved": {
       "title": "Saved to Notes",
       "action": "Open"
+    },
+    "floatingBarHidden": {
+      "title": "Floating bar hidden for 1 hour",
+      "description": "Your shortcut still works. Turn the bar off for good in Settings."
     }
   },
   "personalize": {
-    "tabs": {
-      "smart": "Smart",
-      "dictionary": "Dictionary",
-      "snippets": "Snippets",
-      "styles": "Styles"
-    },
     "intro": {
-      "smart": "What Utter does to your words between speaking and typing.",
       "dictionary": "Names, terms and spellings Utter should get right. Add “misspelling -> correct” to fix a word the model keeps getting wrong.",
       "snippets": "Say a short phrase and Utter types the full text: an address, a sign-off, a meeting link.",
       "styles": "Write differently in each app: casual in chat, formal in email, precise in your code editor."

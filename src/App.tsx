@@ -126,12 +126,12 @@ function App() {
   useEffect(() => {
     if (onboardingStep === "done" && !hasCompletedPostOnboardingInit.current) {
       hasCompletedPostOnboardingInit.current = true;
-      Promise.all([
-        commands.initializeEnigo(),
-        commands.initializeShortcuts(),
-      ]).catch((e) => {
-        console.warn("Failed to initialize:", e);
-      });
+      Promise.all([commands.initializeEnigo(), commands.initializeShortcuts()])
+        // The floating bar comes up once dictation is ready to use.
+        .then(() => commands.showFloatingBar())
+        .catch((e) => {
+          console.warn("Failed to initialize:", e);
+        });
       refreshAudioDevices();
       refreshOutputDevices();
     }
@@ -194,8 +194,9 @@ function App() {
   // Pages ask for another section through navigateTo() (lib/navigation.ts).
   useEffect(() => {
     const onNavigate = (event: Event) => {
-      const section = (event as CustomEvent<string>).detail;
-      if (section in SECTIONS_CONFIG) {
+      const section = (event as CustomEvent<{ section: string }>).detail
+        ?.section;
+      if (section && section in SECTIONS_CONFIG) {
         setCurrentSection(section as SidebarSection);
       }
     };
@@ -234,9 +235,21 @@ function App() {
         });
       },
     );
+    // Right-click on the floating bar hides it for a while; offer Undo here.
+    const unlistenBar = listen<number>("floating-bar-hidden", () => {
+      toast(t("toasts.floatingBarHidden.title"), {
+        description: t("toasts.floatingBarHidden.description"),
+        duration: 6000,
+        action: {
+          label: t("home.undo"),
+          onClick: () => void commands.unhideFloatingBar(),
+        },
+      });
+    });
     return () => {
       unlistenKept.then((fn) => fn());
       unlistenNote.then((fn) => fn());
+      unlistenBar.then((fn) => fn());
     };
   }, [t]);
 

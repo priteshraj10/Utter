@@ -2,44 +2,51 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { CustomWords } from "../settings/CustomWords";
 import { SettingsGroup } from "../ui/SettingsGroup";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { AppStylesEditor } from "./AppStylesEditor";
 import { SmartFeatures } from "./SmartFeatures";
 import { SnippetsEditor } from "./SnippetsEditor";
 
-const TABS = ["smart", "dictionary", "snippets", "styles"] as const;
+const Page: React.FC<{ intro: string; children: React.ReactNode }> = ({
+  intro,
+  children,
+}) => (
+  <div className="max-w-3xl w-full mx-auto space-y-5">
+    <p className="px-1 text-sm text-muted-foreground">{intro}</p>
+    {children}
+  </div>
+);
 
-/** Everything that makes dictation sound like you. */
-export const PersonalizePage: React.FC = () => {
+/** Words Utter should get right. */
+export const DictionaryPage: React.FC = () => {
   const { t } = useTranslation();
-
   return (
-    <div className="max-w-3xl w-full mx-auto">
-      <Tabs defaultValue="smart" className="space-y-5">
-        <TabsList>
-          {TABS.map((tab) => (
-            <TabsTrigger key={tab} value={tab}>
-              {t(`personalize.tabs.${tab}`)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <Page intro={t("personalize.intro.dictionary")}>
+      <SettingsGroup>
+        <CustomWords grouped />
+      </SettingsGroup>
+    </Page>
+  );
+};
 
-        {TABS.map((tab) => (
-          <TabsContent key={tab} value={tab} className="space-y-4">
-            <p className="px-1 text-sm text-muted-foreground">
-              {t(`personalize.intro.${tab}`)}
-            </p>
-            {tab === "smart" && <SmartFeatures />}
-            {tab === "dictionary" && (
-              <SettingsGroup>
-                <CustomWords grouped />
-              </SettingsGroup>
-            )}
-            {tab === "snippets" && <SnippetsEditor />}
-            {tab === "styles" && <AppStylesEditor />}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
+/** Short phrases that expand into longer text. */
+export const SnippetsPage: React.FC = () => {
+  const { t } = useTranslation();
+  return (
+    <Page intro={t("personalize.intro.snippets")}>
+      <SnippetsEditor />
+    </Page>
+  );
+};
+
+/** How Utter writes: per-app styles, the smart features, and the AI engine. */
+export const StylePage: React.FC = () => {
+  const { t } = useTranslation();
+  return (
+    <Page intro={t("personalize.intro.styles")}>
+      <AppStylesEditor />
+      <div className="pt-2">
+        <SmartFeatures />
+      </div>
+    </Page>
   );
 };

@@ -1,43 +1,48 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  BookA,
   Cpu,
   FlaskConical,
   Home,
-  Info,
   NotebookPen,
   Settings2,
+  TextQuote,
   WandSparkles,
-  Wrench,
 } from "lucide-react";
 import UtterTextLogo from "./icons/UtterTextLogo";
 import { useSettings } from "../hooks/useSettings";
 import { useOsType } from "@/hooks/useOsType";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
-import { GeneralSettings, ModelsSettings } from "./settings";
+import { ModelsSettings } from "./settings";
 import type { AppSettings } from "@/bindings";
 import { cn } from "@/lib/utils/cn";
 
 const NotesPage = React.lazy(() =>
   import("./notes/NotesPage").then((m) => ({ default: m.NotesPage })),
 );
-const PersonalizePage = React.lazy(() =>
+const DictionaryPage = React.lazy(() =>
   import("./personalize/PersonalizePage").then((m) => ({
-    default: m.PersonalizePage,
+    default: m.DictionaryPage,
+  })),
+);
+const SnippetsPage = React.lazy(() =>
+  import("./personalize/PersonalizePage").then((m) => ({
+    default: m.SnippetsPage,
+  })),
+);
+const StylePage = React.lazy(() =>
+  import("./personalize/PersonalizePage").then((m) => ({
+    default: m.StylePage,
+  })),
+);
+const SettingsPage = React.lazy(() =>
+  import("./settings/SettingsPage").then((m) => ({
+    default: m.SettingsPage,
   })),
 );
 const HomePage = React.lazy(() =>
   import("./home/HomePage").then((m) => ({ default: m.HomePage })),
-);
-const AdvancedSettings = React.lazy(() =>
-  import("./settings/advanced/AdvancedSettings").then((m) => ({
-    default: m.AdvancedSettings,
-  })),
-);
-const AboutSettings = React.lazy(() =>
-  import("./settings/about/AboutSettings").then((m) => ({
-    default: m.AboutSettings,
-  })),
 );
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -72,18 +77,25 @@ export const SECTIONS_CONFIG = {
     group: "workspace",
     enabled: () => true,
   },
-  personalize: {
-    labelKey: "sidebar.personalize",
-    icon: WandSparkles,
-    component: PersonalizePage,
+  dictionary: {
+    labelKey: "sidebar.dictionary",
+    icon: BookA,
+    component: DictionaryPage,
     group: "workspace",
     enabled: () => true,
   },
-  general: {
-    labelKey: "sidebar.settings",
-    icon: Settings2,
-    component: GeneralSettings,
-    group: "system",
+  snippets: {
+    labelKey: "sidebar.snippets",
+    icon: TextQuote,
+    component: SnippetsPage,
+    group: "workspace",
+    enabled: () => true,
+  },
+  style: {
+    labelKey: "sidebar.style",
+    icon: WandSparkles,
+    component: StylePage,
+    group: "workspace",
     enabled: () => true,
   },
   models: {
@@ -93,10 +105,10 @@ export const SECTIONS_CONFIG = {
     group: "system",
     enabled: () => true,
   },
-  advanced: {
-    labelKey: "sidebar.advanced",
-    icon: Wrench,
-    component: AdvancedSettings,
+  general: {
+    labelKey: "sidebar.settings",
+    icon: Settings2,
+    component: SettingsPage,
     group: "system",
     enabled: () => true,
   },
@@ -106,13 +118,6 @@ export const SECTIONS_CONFIG = {
     component: null,
     group: "system",
     enabled: (settings) => settings?.debug_mode ?? false,
-  },
-  about: {
-    labelKey: "sidebar.about",
-    icon: Info,
-    component: AboutSettings,
-    group: "system",
-    enabled: () => true,
   },
 } as const satisfies Record<string, SectionConfig>;
 

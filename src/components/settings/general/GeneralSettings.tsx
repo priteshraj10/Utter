@@ -6,6 +6,7 @@ import { MicrophoneSelector } from "../MicrophoneSelector";
 import { ChannelSelector } from "../ChannelSelector";
 import { ShortcutInput } from "../ShortcutInput";
 import { SettingsGroup } from "../../ui/SettingsGroup";
+import { ToggleSwitch } from "../../ui/ToggleSwitch";
 import { OutputDeviceSelector } from "../OutputDeviceSelector";
 import { ShortcutActivationSetting } from "../ShortcutActivation";
 import { AudioFeedback } from "../AudioFeedback";
@@ -20,7 +21,8 @@ import { isChinese } from "@/lib/utils/languageSuggestions";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { audioFeedbackEnabled, getSetting } = useSettings();
+  const { audioFeedbackEnabled, getSetting, updateSetting, isUpdating } =
+    useSettings();
   const isLinux = type() === "linux";
   const [showMore, setShowMore] = useState(false);
   // The cleanup and command shortcuts do nothing without an AI provider.
@@ -39,6 +41,14 @@ export const GeneralSettings: React.FC = () => {
         <PreferredLanguages grouped={true} />
         <AudioFeedback grouped={true} />
         <AutostartToggle grouped={true} />
+        <ToggleSwitch
+          grouped
+          checked={getSetting("floating_bar") ?? true}
+          onChange={(on) => updateSetting("floating_bar", on)}
+          isUpdating={isUpdating("floating_bar")}
+          label={t("settings.general.floatingBar.label")}
+          description={t("settings.general.floatingBar.description")}
+        />
       </SettingsGroup>
 
       <button

@@ -756,6 +756,15 @@ pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(),
     // Reposition in case the window needs to re-center for the new style.
     crate::utils::update_overlay_position(&app);
 
+    // The resting floating bar follows the overlay: off with it, back with it.
+    if !crate::tray::dictation_in_progress(&app) {
+        if parsed == OverlayStyle::None {
+            crate::overlay::hide_overlay_window(&app);
+        } else {
+            crate::overlay::show_floating_bar(&app);
+        }
+    }
+
     Ok(())
 }
 
