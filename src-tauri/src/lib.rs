@@ -21,6 +21,7 @@ mod memory;
 mod overlay;
 mod paste_tx;
 pub mod portable;
+pub mod recovery;
 mod secure_input;
 mod settings;
 mod shortcut;
@@ -224,6 +225,13 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     ));
     app_handle.manage(tray::TrayState::new());
     app_handle.manage(TranscriptionJobManager::new(app_handle));
+
+    // Check for and recover any interrupted or crashed recording from previous session
+    let app_handle_for_recovery = app_handle.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(600)).await;
+        recovery::check_and_recover(&app_handle_for_recovery);
+    });
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command

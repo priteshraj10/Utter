@@ -112,6 +112,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     if let Some(samples) = audio_manager.cancel_recording() {
         keep_cancelled_recording(app, samples);
     }
+    crate::recovery::discard_session();
 
     // Abandon any live streaming transcription, and stop a transcription
     // already in progress

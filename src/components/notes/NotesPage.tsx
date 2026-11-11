@@ -296,6 +296,20 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
     };
   }, []);
 
+  // Notifies user when an interrupted/crashed recording is recovered on startup
+  useEffect(() => {
+    const unlisten = listen<{ id: number; title: string; audio_seconds: number }>(
+      "note-recovered",
+      (event) => {
+        toast.success(t("notes.recoveredNotice"));
+        setSelectedId(event.payload.id);
+      }
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   useEffect(() => {
     const unlisten = events.recordingStateEvent.listen((event) => {
       const phase = event.payload.phase;

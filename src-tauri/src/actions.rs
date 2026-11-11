@@ -1238,6 +1238,9 @@ impl ShortcutAction for TranscribeAction {
             if self.mode != DictationMode::Note {
                 // Dynamically register the cancel shortcut in a separate task to avoid deadlock
                 shortcut::register_cancel_shortcut(app);
+            } else {
+                let hm = app.state::<Arc<HistoryManager>>();
+                crate::recovery::start_session(hm.recordings_dir().to_path_buf(), "note");
             }
         } else {
             // Starting failed (for example due to blocked microphone permissions).
@@ -1340,6 +1343,7 @@ impl ShortcutAction for TranscribeAction {
 
                 if rm.was_cancelled_since(cancel_generation) {
                     debug!("Transcription operation cancelled after recording stop");
+                    crate::recovery::discard_session();
                     tm.cancel_stream();
                     utils::hide_recording_overlay(&ah);
                     set_tray_state(&ah, TrayIconState::Idle);
@@ -1348,6 +1352,7 @@ impl ShortcutAction for TranscribeAction {
 
                 if samples.is_empty() {
                     debug!("Recording produced no audio samples; skipping persistence");
+                    crate::recovery::finish_session();
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
                     tm.cancel_stream();
@@ -1447,6 +1452,7 @@ impl ShortcutAction for TranscribeAction {
                                     );
                                     TranscriptionOutcome::Typed
                                 };
+                                crate::recovery::finish_session();
                                 utils::hide_recording_overlay(&ah);
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 emit_transcription_complete(&ah, outcome, sample_count, stop_time);
@@ -1655,6 +1661,9 @@ impl ShortcutAction for TranscribeAction {
                             }
                         }
                         Err(err) => {
+                            if mode == DictationMode::Note {
+                                crate::recovery::finish_session();
+                            }
                             if rm.was_cancelled_since(cancel_generation) {
                                 debug!(
                                     "Transcription operation cancelled after transcription error"

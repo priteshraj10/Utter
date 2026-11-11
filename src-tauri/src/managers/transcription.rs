@@ -1371,6 +1371,7 @@ fn agreed_language(transcripts: &[Transcript]) -> Option<String> {
 }
 
 fn emit_stream_text(app_handle: &AppHandle, committed: &str, tentative: &str) {
+    crate::recovery::update_live_text(committed, tentative);
     let _ = StreamTextEvent {
         committed: committed.to_string(),
         tentative: tentative.to_string(),
