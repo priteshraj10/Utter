@@ -180,6 +180,15 @@ pub fn plan(
 
     match auto_language(model, preferred, labels) {
         AutoLanguage::Native => {
+            // Someone who speaks one language the model knows means that
+            // language by Auto. Letting a multilingual model guess anyway
+            // turned accented English into Hindi (Devanagari) or Spanish.
+            if let [only] = compatible_preferences(model.languages, preferred).as_slice() {
+                return Plan::Fixed {
+                    language: only.clone(),
+                    source: LanguageSource::Selected,
+                };
+            }
             if mode == LanguageDetectionMode::Always && !model.streaming {
                 let unrestricted = ModelLanguages {
                     detects: false,
@@ -383,20 +392,27 @@ mod tests {
     }
 
     #[test]
-    fn native_detection_is_kept_unless_always_and_not_streaming() {
+    fn native_detection_is_kept_for_several_languages_unless_always_and_not_streaming() {
         let languages = codes("en de");
         let whisper = model(&languages, true, false);
         let always = detect("en de", "en de", Native);
         assert_eq!(plan_on(&whisper, "auto", "en de", WhenNeeded), Plan::Native);
         assert_eq!(plan_on(&whisper, "auto", "en de", Always), always);
-        assert_eq!(plan_on(&whisper, "auto", "en", WhenNeeded), Plan::Native);
+        // One spoken language: Auto is that language, never a guess.
+        assert_eq!(
+            plan_on(&whisper, "auto", "en", WhenNeeded),
+            fixed("en", Selected)
+        );
         assert_eq!(
             plan_on(&whisper, "auto", "en ja", Always),
             fixed("en", Selected)
         );
         let streaming = model(&languages, true, true);
         assert_eq!(plan_on(&streaming, "auto", "en de", Always), Plan::Native);
-        assert_eq!(plan_on(&streaming, "auto", "en", Always), Plan::Native);
+        assert_eq!(
+            plan_on(&streaming, "auto", "en", Always),
+            fixed("en", Selected)
+        );
     }
 
     #[test]
