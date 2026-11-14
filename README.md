@@ -2,7 +2,7 @@
 
 **Local-first AI voice dictation, command mode, meeting call recording, and smart notes for your desktop.**
 
-🌐 **Website:** [priteshraj10.github.io/Utter](https://priteshraj10.github.io/Utter/) · ⬇️ **Download:** [Releases](https://github.com/priteshraj10/Utter/releases)
+🌐 **Website:** [utter-app.github.io](https://utter-app.github.io/) · ⬇️ **Download:** [Releases](https://github.com/priteshraj10/Utter/releases)
 
 Utter is an open-source, private desktop dictation studio built with Tauri 2.x, Rust, and React/TypeScript. Hold a shortcut, speak naturally, and have clean, formatted text typed into any application—powered by on-device speech recognition and private AI refinement.
 
