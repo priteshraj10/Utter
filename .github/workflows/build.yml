@@ -19,7 +19,7 @@ on:
       asset-prefix:
         required: false
         type: string
-        default: "handy"
+        default: "utter"
       asset-name-pattern:
         required: false
         type: string
@@ -605,7 +605,7 @@ jobs:
             fi
             smoke_bin="${root}/usr/bin/utter"
             if [ ! -f "$smoke_bin" ]; then
-              smoke_bin="${root}/usr/bin/handy"
+              smoke_bin="${root}/usr/bin/utter"
             fi
             HANDY_NO_GTK_LAYER_SHELL=1 \
             LD_LIBRARY_PATH="${root}/usr/lib/Utter:${root}/usr/lib/Handy:${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
@@ -675,7 +675,7 @@ jobs:
                 if [ -f "squashfs-root/usr/bin/utter" ]; then
                   require_path "squashfs-root/usr/bin/utter" "AppImage utter binary"
                 else
-                  require_path "squashfs-root/usr/bin/handy" "AppImage handy binary"
+                  require_path "squashfs-root/usr/bin/utter" "AppImage utter binary"
                 fi
                 # Gear Lever and other integration tools consume the root entry;
                 # appimagetool does not update the copy under usr/share/applications.
@@ -784,9 +784,9 @@ jobs:
           function Assert-PackageContents {
             param([string]$Root, [string]$Label)
 
-            $handy = Get-ChildItem $Root -Filter "handy.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            $handy = Get-ChildItem $Root -Filter "utter.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
             if (-not $handy) {
-              throw "$Label package is missing handy.exe"
+              throw "$Label package is missing utter.exe"
             }
             foreach ($dll in $stagedDlls) {
               if (-not (Get-ChildItem $Root -Filter $dll.Name -Recurse -ErrorAction SilentlyContinue)) {
@@ -797,7 +797,7 @@ jobs:
             $deviceOutput = (& $handy.FullName --list-devices | Out-String)
             $deviceOutput | Write-Host
             if ($LASTEXITCODE -ne 0) {
-              throw "$Label handy.exe --list-devices failed"
+              throw "$Label utter.exe --list-devices failed"
             }
             if ("${{ inputs.target }}" -like "aarch64*" -and $deviceOutput -match "kind=(vulkan|cuda|metal|gpu)") {
               throw "$Label Windows ARM64 package unexpectedly exposed a GPU compute device"
