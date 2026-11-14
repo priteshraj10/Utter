@@ -350,7 +350,7 @@
           },
           "command_mode": {
             "name": "Command mode",
-            "description": "Select text, hold this and say how to change it (\"make this friendlier\", \"translate to Hindi\"). With nothing selected, say what to write."
+            "description": "Say how to change text (\"make this friendlier\", \"translate to Hindi\"). Select text first, or just speak right after dictating to fix what you said (\"change Tuesday to Wednesday\") — it's rewritten in place."
           },
           "voice_note": {
             "name": "Voice note",

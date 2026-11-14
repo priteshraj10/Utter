@@ -253,6 +253,25 @@ pub fn send_copy(enigo: &mut Enigo) -> Result<(), String> {
     clicked
 }
 
+/// Selects the `count` characters before the cursor (Shift+Left), so the next
+/// paste replaces them.
+pub fn send_select_left(enigo: &mut Enigo, count: usize) -> Result<(), String> {
+    enigo
+        .key(Key::Shift, enigo::Direction::Press)
+        .map_err(|e| format!("Failed to press Shift: {}", e))?;
+    let mut result = Ok(());
+    for _ in 0..count {
+        if let Err(e) = enigo.key(Key::LeftArrow, enigo::Direction::Click) {
+            result = Err(format!("Failed to press Left: {}", e));
+            break;
+        }
+    }
+    enigo
+        .key(Key::Shift, enigo::Direction::Release)
+        .map_err(|e| format!("Failed to release Shift: {}", e))?;
+    result
+}
+
 /// Sends a Ctrl+Shift+V paste command.
 /// This is commonly used in terminal applications on Linux to paste without formatting.
 /// Note: On Wayland, this may not work - callers should check for Wayland and use alternative methods.

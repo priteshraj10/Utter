@@ -859,6 +859,9 @@ pub(crate) struct ProcessedTranscription {
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
     pub should_press_enter: bool,
+    /// Characters before the cursor to select first, so the paste replaces
+    /// them ("fix by voice" rewriting the dictation just typed). Usually 0.
+    pub replace_chars: usize,
 }
 
 pub(crate) async fn process_transcription_output(
@@ -904,6 +907,7 @@ pub(crate) async fn process_transcription_output_for(
                 post_processed_text: Some(format!("[Action] {action_desc}")),
                 post_process_prompt: Some(action_desc),
                 should_press_enter: false,
+                replace_chars: 0,
             };
         }
 
@@ -1011,6 +1015,7 @@ pub(crate) async fn process_transcription_output_for(
         post_processed_text,
         post_process_prompt,
         should_press_enter,
+        replace_chars: 0,
     }
 }
 
@@ -1027,6 +1032,7 @@ async fn run_voice_command(
             post_processed_text: None,
             post_process_prompt: None,
             should_press_enter: false,
+            replace_chars: 0,
         });
     }
     if let Some(action_desc) =
@@ -1037,6 +1043,7 @@ async fn run_voice_command(
             post_processed_text: Some(format!("[Action] {action_desc}")),
             post_process_prompt: Some(action_desc),
             should_press_enter: false,
+            replace_chars: 0,
         });
     }
     let settings = get_settings(app);
@@ -1045,11 +1052,25 @@ async fn run_voice_command(
         utils::redact_text(instruction),
         selection.map_or(0, str::len)
     );
+    // Fix by voice: with nothing selected, the dictation just typed is what
+    // the instruction is about. When it still sits right before the cursor
+    // (same app, last two minutes), it is replaced in place rather than the
+    // rewrite being typed after it.
+    let mut replace_chars = 0;
     let fallback_sel: Option<String> = if selection.is_none() {
-        crate::utter::recent_dictation_memory(None, 1)
-            .into_iter()
-            .next()
-            .map(|m| m.text)
+        let in_place = crate::utter::dictation_screen_context().and_then(|ctx| {
+            crate::utter::replaceable_last_dictation(ctx.before_text.as_deref()?, &ctx.app_name)
+        });
+        match in_place {
+            Some((text, chars)) => {
+                replace_chars = chars;
+                Some(text)
+            }
+            None => crate::utter::recent_dictation_memory(None, 1)
+                .into_iter()
+                .next()
+                .map(|m| m.text),
+        }
     } else {
         None
     };
@@ -1070,14 +1091,27 @@ async fn run_voice_command(
     }
 
     let output = output.unwrap_or_else(|| {
-        crate::utter::local_transform_text(selection.unwrap_or(instruction), instruction)
+        crate::utter::local_transform_text(effective_sel.unwrap_or(instruction), instruction)
     });
+    let output = output.trim().to_string();
+
+    // The rewrite is now the latest dictation, so it can be fixed again.
+    if replace_chars > 0 && !output.is_empty() {
+        if let Some(ctx) = crate::utter::dictation_screen_context() {
+            crate::utter::record_dictation_memory(
+                ctx.app_name.clone(),
+                ctx.window_title.clone(),
+                output.clone(),
+            );
+        }
+    }
 
     Some(ProcessedTranscription {
-        final_text: output.trim().to_string(),
-        post_processed_text: Some(output.trim().to_string()),
+        final_text: output.clone(),
+        post_processed_text: Some(output),
         post_process_prompt: Some(format!("Command: {}", instruction.trim())),
         should_press_enter: false,
+        replace_chars,
     })
 }
 
@@ -1581,6 +1615,7 @@ impl ShortcutAction for TranscribeAction {
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
                                 let should_press_enter = processed.should_press_enter;
+                                let replace_chars = processed.replace_chars;
                                 let rm_for_paste = Arc::clone(&rm);
                                 // Taken before the paste thread exists, and so
                                 // before the next session can start.
@@ -1599,6 +1634,22 @@ impl ShortcutAction for TranscribeAction {
                                             return;
                                         }
 
+                                        // Fix by voice: select the dictation being
+                                        // rewritten so the paste replaces it.
+                                        if replace_chars > 0 {
+                                            if let Err(e) = crate::clipboard::with_enigo(
+                                                &ah_clone,
+                                                move |enigo| {
+                                                    crate::input::send_select_left(
+                                                        enigo,
+                                                        replace_chars,
+                                                    )
+                                                },
+                                            ) {
+                                                warn!("Could not select the last dictation: {e}");
+                                            }
+                                            std::thread::sleep(Duration::from_millis(30));
+                                        }
                                         let outcome =
                                             match utils::paste(final_text, ah_clone.clone()) {
                                                 Ok(()) => {

@@ -146,6 +146,40 @@ pub fn recent_dictation_memory(
         .collect()
 }
 
+/// How long after a dictation "fix by voice" may still rewrite it in place.
+const FIX_BY_VOICE_WINDOW_SECS: i64 = 120;
+
+/// How many characters before the cursor to select so they can be replaced,
+/// when `before_text` ends with `dictation` (ignoring trailing whitespace on
+/// both, which the trailing-space setting may have added). `None` when the
+/// dictation isn't what sits right before the cursor.
+pub fn chars_to_replace(before_text: &str, dictation: &str) -> Option<usize> {
+    let dictation = dictation.trim();
+    if dictation.is_empty() {
+        return None;
+    }
+    let trimmed = before_text.trim_end();
+    if !trimmed.ends_with(dictation) {
+        return None;
+    }
+    let trailing = before_text[trimmed.len()..].chars().count();
+    Some(dictation.chars().count() + trailing)
+}
+
+/// The dictation that "fix by voice" should rewrite in place: the latest one,
+/// typed in `app_name` in the last two minutes, and still right before the
+/// cursor. Returns its text and how many characters to select.
+pub fn replaceable_last_dictation(before_text: &str, app_name: &str) -> Option<(String, usize)> {
+    let last = recent_dictation_memory(Some(app_name), 1)
+        .into_iter()
+        .next()?;
+    if chrono::Utc::now().timestamp() - last.timestamp > FIX_BY_VOICE_WINDOW_SECS {
+        return None;
+    }
+    let chars = chars_to_replace(before_text, &last.text)?;
+    Some((last.text, chars))
+}
+
 pub fn clear_dictation_memory() {
     let mut mem = DICTATION_MEMORY.lock().unwrap_or_else(|e| e.into_inner());
     mem.clear();
@@ -3358,6 +3392,31 @@ pub fn local_transform_text(text: &str, instruction: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fix_by_voice_selects_the_dictation_and_its_trailing_space() {
+        assert_eq!(
+            chars_to_replace("Hi team. See you Tuesday ", "See you Tuesday"),
+            Some(16)
+        );
+        assert_eq!(
+            chars_to_replace("See you Tuesday", "See you Tuesday"),
+            Some(15)
+        );
+        // Counts characters, not bytes.
+        assert_eq!(chars_to_replace("नमस्ते दोस्त", "दोस्त"), Some(5));
+    }
+
+    #[test]
+    fn fix_by_voice_leaves_text_alone_when_the_dictation_moved() {
+        // The user typed after the dictation.
+        assert_eq!(
+            chars_to_replace("See you Tuesday. Bye", "See you Tuesday."),
+            None
+        );
+        assert_eq!(chars_to_replace("", "anything"), None);
+        assert_eq!(chars_to_replace("some text", "   "), None);
+    }
 
     fn snippet(trigger: &str, expansion: &str) -> Snippet {
         Snippet {
