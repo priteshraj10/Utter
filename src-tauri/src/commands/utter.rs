@@ -197,6 +197,41 @@ pub async fn ask_notes(
     crate::actions::ask_notes(&app, &question, history.as_deref().unwrap_or(&[])).await
 }
 
+/// Saved "Ask your notes" chats, most recently used first.
+#[tauri::command]
+#[specta::specta]
+pub fn list_note_chats(
+    notes: State<'_, Arc<NotesManager>>,
+) -> Result<Vec<crate::managers::notes::NoteChatSummary>, String> {
+    notes.list_chats(50).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_note_chat(
+    notes: State<'_, Arc<NotesManager>>,
+    id: i64,
+) -> Result<Option<crate::managers::notes::NoteChat>, String> {
+    notes.get_chat(id).map_err(|e| e.to_string())
+}
+
+/// Saves a chat (a new one when `id` is null) and returns its id.
+#[tauri::command]
+#[specta::specta]
+pub fn save_note_chat(
+    notes: State<'_, Arc<NotesManager>>,
+    id: Option<i64>,
+    turns: Vec<crate::managers::notes::ChatTurn>,
+) -> Result<i64, String> {
+    notes.save_chat(id, &turns).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_note_chat(notes: State<'_, Arc<NotesManager>>, id: i64) -> Result<(), String> {
+    notes.delete_chat(id).map_err(|e| e.to_string())
+}
+
 /// Returns recent dictations from conversational context memory.
 #[tauri::command]
 #[specta::specta]

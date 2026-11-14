@@ -795,6 +795,44 @@ async askNotes(question: string, history?: ChatExchange[] | null) : Promise<Resu
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Saved "Ask your notes" chats, most recently used first.
+ */
+async listNoteChats() : Promise<Result<NoteChatSummary[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_note_chats") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getNoteChat(id: number) : Promise<Result<NoteChat | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_note_chat", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Saves a chat (a new one when `id` is null) and returns its id.
+ */
+async saveNoteChat(id: number | null, turns: ChatTurn[]) : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("save_note_chat", { id, turns }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteNoteChat(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_note_chat", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getDictationContextMemory() : Promise<DictationMemoryItem[]> {
     return await TAURI_INVOKE("get_dictation_context_memory");
 },
@@ -1668,6 +1706,22 @@ export type NoteSource = { id: number; title: string }
 /**
  * An answer from Ask-your-notes and the notes it drew on.
  */
+/**
+ * One question and its answer in a saved notes chat.
+ */
+export type ChatTurn = { question: string; answer: NotesAnswer }
+/**
+ * A saved "Ask your notes" conversation.
+ */
+export type NoteChat = { id: number; 
+/**
+ * The first question, shortened.
+ */
+title: string; turns: ChatTurn[]; created_at: number; updated_at: number }
+/**
+ * A chat in the Recent chats list (no turns).
+ */
+export type NoteChatSummary = { id: number; title: string; turn_count: number; updated_at: number }
 export type NotesAnswer = { answer: string; 
 /**
  * `(id, title)` of the notes cited, or of every note consulted when the

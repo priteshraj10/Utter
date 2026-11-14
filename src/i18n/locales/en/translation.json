@@ -1141,7 +1141,15 @@
         "decisions": "What key decisions were made recently?",
         "thisWeek": "Summarize everything I worked on this week",
         "followUps": "Who do I need to follow up with?"
-      }
+      },
+      "newChat": "New chat",
+      "recent": "Recent chats",
+      "noChats": "Your chats will appear here.",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "turns_one": "{{count}} question",
+      "turns_other": "{{count}} questions",
+      "deleteChat": "Delete chat"
     },
     "editor": {
       "stats": "{{words}} words · {{characters}} characters",

@@ -300,7 +300,7 @@ pub(crate) async fn summarize_note(
 }
 
 /// An answer from Ask-your-notes and the notes it drew on.
-#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type)]
 pub struct NotesAnswer {
     pub answer: String,
     /// `(id, title)` of the notes cited, or of every note consulted when the
@@ -308,7 +308,7 @@ pub struct NotesAnswer {
     pub sources: Vec<NoteSource>,
 }
 
-#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type)]
 pub struct NoteSource {
     pub id: i64,
     pub title: String,
