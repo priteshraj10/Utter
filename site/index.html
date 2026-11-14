@@ -9,40 +9,27 @@
       content="Local-first AI voice dictation, meeting call recording, and smart notes for macOS, Windows, and Linux. 100% private, offline Whisper speech recognition."
     />
     <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="apple-touch-icon" href="icon.png" />
+    <meta name="theme-color" content="#09090b" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Utter" />
+    <meta
+      property="og:title"
+      content="Utter — Local-first AI voice dictation"
+    />
+    <meta
+      property="og:description"
+      content="Speak naturally into any app. Private, on-device dictation, meeting notes and AI cleanup for macOS, Windows and Linux."
+    />
+    <meta property="og:image" content="logo.png" />
+    <meta name="twitter:card" content="summary" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "system-ui", "sans-serif"],
-              mono: ["JetBrains Mono", "monospace"],
-            },
-            colors: {
-              zinc: {
-                950: "#09090b",
-                900: "#121215",
-                850: "#18181b",
-                800: "#27272a",
-                700: "#3f3f46",
-              },
-              brand: {
-                400: "#818cf8",
-                500: "#6366f1",
-                600: "#4f46e5",
-              },
-            },
-          },
-        },
-      };
-    </script>
+    <link rel="stylesheet" href="styles.css" />
     <style>
       @keyframes pulse-wave {
         0%,
@@ -196,7 +183,7 @@
         >
           Voice dictation that writes at the speed of
           <span
-            class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-200"
+            class="text-transparent bg-clip-text bg-linear-to-r from-indigo-400 via-violet-300 to-indigo-200"
             >thought</span
           >.
         </h1>
@@ -281,17 +268,16 @@
               >
                 154 WPM
               </span>
-              <button
-                class="w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center text-xs transition-colors"
-                title="Cancel"
+              <span
+                class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-xs"
+                aria-hidden="true"
+                >✕</span
               >
-                ✕
-              </button>
             </div>
           </div>
 
           <p class="mt-4 text-xs font-mono text-zinc-500">
-            Wispr Flow–style floating bar • Hold
+            Floating bar • Hold
             <kbd
               class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700"
               >fn</kbd
@@ -315,8 +301,8 @@
             Engineered for Performance
           </h2>
           <p class="text-3xl sm:text-4xl font-bold tracking-tight text-white">
-            Everything you love about Wispr Flow, completely local and
-            open-source.
+            Everything you expect from a premium dictation app, completely local
+            and open-source.
           </p>
         </div>
 
@@ -328,10 +314,25 @@
             <div
               class="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-5"
             >
-              🎙️
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">
-              Wispr Flow–Style Floating Bar
+              Floating Dictation Bar
             </h3>
             <p class="text-sm text-zinc-400 leading-relaxed">
               A minimal, distraction-free floating pill at rest that expands on
@@ -347,7 +348,20 @@
             <div
               class="w-10 h-10 rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400 flex items-center justify-center mb-5"
             >
-              📞
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"
+                />
+              </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">
               System Call & Meeting Recording
@@ -366,7 +380,19 @@
             <div
               class="w-10 h-10 rounded-xl bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-5"
             >
-              🔒
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">
               100% Offline & Zero Cloud Lock-in
@@ -385,7 +411,23 @@
             <div
               class="w-10 h-10 rounded-xl bg-amber-600/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-5"
             >
-              🇮🇳
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m5 8 6 6" />
+                <path d="m4 14 6-6 2-3" />
+                <path d="M2 5h12" />
+                <path d="M7 2h1" />
+                <path d="m22 22-5-10-5 10" />
+                <path d="M14 18h6" />
+              </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">
               Mixed Hindi + English (Hinglish)
@@ -404,7 +446,20 @@
             <div
               class="w-10 h-10 rounded-xl bg-sky-600/10 border border-sky-500/20 text-sky-400 flex items-center justify-center mb-5"
             >
-              🎯
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">
               Context-Aware Tone Adaptation
@@ -423,7 +478,21 @@
             <div
               class="w-10 h-10 rounded-xl bg-pink-600/10 border border-pink-500/20 text-pink-400 flex items-center justify-center mb-5"
             >
-              🍏
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9.94 14.06 2 22" />
+                <path
+                  d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6Z"
+                />
+              </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">
               Apple Intelligence & Local LLMs
@@ -453,9 +522,9 @@
         </div>
 
         <div
-          class="glass rounded-2xl overflow-hidden border border-zinc-800 shadow-xl"
+          class="glass rounded-2xl overflow-x-auto border border-zinc-800 shadow-xl"
         >
-          <table class="w-full text-left text-sm text-zinc-300">
+          <table class="w-full min-w-[640px] text-left text-sm text-zinc-300">
             <thead
               class="bg-zinc-900/80 text-xs font-mono uppercase text-zinc-400 border-b border-zinc-800"
             >
@@ -616,7 +685,7 @@
         </div>
 
         <div class="glass rounded-2xl overflow-x-auto border border-zinc-800">
-          <table class="w-full text-left text-sm text-zinc-300">
+          <table class="w-full min-w-[640px] text-left text-sm text-zinc-300">
             <thead
               class="bg-zinc-900/90 text-xs font-mono uppercase text-zinc-400 border-b border-zinc-800"
             >
@@ -625,7 +694,7 @@
                 <th class="px-6 py-4 text-indigo-400 font-bold">
                   Utter (Open Source)
                 </th>
-                <th class="px-6 py-4">Wispr Flow</th>
+                <th class="px-6 py-4">Cloud dictation apps</th>
                 <th class="px-6 py-4">System Dictation</th>
               </tr>
             </thead>
@@ -637,7 +706,9 @@
                 <td class="px-6 py-4 text-emerald-400 font-medium">
                   100% Local / Zero Audio Sent
                 </td>
-                <td class="px-6 py-4 text-zinc-400">Cloud servers required</td>
+                <td class="px-6 py-4 text-zinc-400">
+                  Audio processed in the cloud
+                </td>
                 <td class="px-6 py-4 text-zinc-400">Variable / Cloud</td>
               </tr>
               <tr>
@@ -647,7 +718,7 @@
                 <td class="px-6 py-4 text-emerald-400 font-medium">
                   Free & Open Source (MIT)
                 </td>
-                <td class="px-6 py-4 text-zinc-400">$12 - $15 / month</td>
+                <td class="px-6 py-4 text-zinc-400">Usually a subscription</td>
                 <td class="px-6 py-4 text-zinc-400">Free with OS</td>
               </tr>
               <tr>
@@ -655,9 +726,9 @@
                   System Call Recording
                 </td>
                 <td class="px-6 py-4 text-emerald-400 font-medium">
-                  Included (Teams, Zoom, Meet)
+                  Included, on your device (Teams, Zoom, Meet)
                 </td>
-                <td class="px-6 py-4 text-red-400">No</td>
+                <td class="px-6 py-4 text-zinc-400">Some, via cloud upload</td>
                 <td class="px-6 py-4 text-red-400">No</td>
               </tr>
               <tr>
@@ -667,7 +738,7 @@
                 <td class="px-6 py-4 text-emerald-400 font-medium">
                   Native & preserved
                 </td>
-                <td class="px-6 py-4 text-amber-400">Partial / English bias</td>
+                <td class="px-6 py-4 text-zinc-400">Varies</td>
                 <td class="px-6 py-4 text-red-400">Fails / garbled</td>
               </tr>
               <tr>
@@ -677,7 +748,7 @@
                 <td class="px-6 py-4 text-emerald-400 font-medium">
                   Minimal, real-time wave & WPM
                 </td>
-                <td class="px-6 py-4 text-emerald-400">Yes</td>
+                <td class="px-6 py-4 text-zinc-400">Varies</td>
                 <td class="px-6 py-4 text-red-400">No</td>
               </tr>
               <tr>
@@ -687,7 +758,7 @@
                 <td class="px-6 py-4 text-emerald-400 font-medium">
                   Apple Intel. + Ollama + Groq
                 </td>
-                <td class="px-6 py-4 text-zinc-400">Proprietary Cloud</td>
+                <td class="px-6 py-4 text-zinc-400">Their own cloud models</td>
                 <td class="px-6 py-4 text-red-400">No formatting</td>
               </tr>
             </tbody>
@@ -710,7 +781,7 @@
           >
             Download Utter for Your Platform
           </p>
-          <p class="text-sm text-zinc-400">
+          <p id="release-note" class="text-sm text-zinc-400">
             All releases are built from source and hosted on GitHub Releases.
           </p>
         </div>
@@ -722,7 +793,10 @@
           >
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="text-2xl">🍏</span>
+                <span
+                  class="text-xs font-semibold uppercase tracking-wider text-indigo-400"
+                  >Apple</span
+                >
                 <span
                   class="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded"
                   >macOS 12+</span
@@ -737,12 +811,14 @@
             <div class="space-y-2">
               <a
                 href="https://github.com/priteshraj10/Utter/releases/latest"
+                data-asset="mac-arm"
                 class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors"
               >
                 Download DMG (Apple Silicon)
               </a>
               <a
                 href="https://github.com/priteshraj10/Utter/releases/latest"
+                data-asset="mac-intel"
                 class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors"
               >
                 Download DMG (Intel x86_64)
@@ -756,7 +832,10 @@
           >
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="text-2xl">🪟</span>
+                <span
+                  class="text-xs font-semibold uppercase tracking-wider text-indigo-400"
+                  >Windows</span
+                >
                 <span
                   class="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded"
                   >Windows 10 / 11</span
@@ -771,12 +850,14 @@
             <div class="space-y-2">
               <a
                 href="https://github.com/priteshraj10/Utter/releases/latest"
+                data-asset="win-x64"
                 class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors"
               >
                 Download Setup (x64)
               </a>
               <a
                 href="https://github.com/priteshraj10/Utter/releases/latest"
+                data-asset="win-arm"
                 class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors"
               >
                 Download Setup (ARM64)
@@ -790,7 +871,10 @@
           >
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="text-2xl">🐧</span>
+                <span
+                  class="text-xs font-semibold uppercase tracking-wider text-indigo-400"
+                  >Linux</span
+                >
                 <span
                   class="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded"
                   >Ubuntu / Fedora / Arch</span
@@ -805,12 +889,14 @@
             <div class="space-y-2">
               <a
                 href="https://github.com/priteshraj10/Utter/releases/latest"
+                data-asset="linux-appimage"
                 class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors"
               >
                 Download AppImage (x86_64)
               </a>
               <a
                 href="https://github.com/priteshraj10/Utter/releases/latest"
+                data-asset="linux-pkg"
                 class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors"
               >
                 Download .deb / .rpm
@@ -869,25 +955,74 @@
     </footer>
 
     <script>
-      // Platform detection for dynamic hero download CTA
+      // Point download buttons at the latest release's real files, and say so
+      // plainly when there is no release yet instead of linking to nothing.
       (function () {
-        const userAgent = window.navigator.userAgent.toLowerCase();
+        const REPO = "priteshraj10/Utter";
+        const ua = navigator.userAgent.toLowerCase();
+        const platform = ua.includes("mac")
+          ? "mac"
+          : ua.includes("win")
+            ? "win"
+            : ua.includes("linux")
+              ? "linux"
+              : null;
         const heroBtn = document.getElementById("hero-download-btn");
         const heroText = document.getElementById("hero-download-text");
+        const patterns = {
+          "mac-arm": /(aarch64|arm64).*\.dmg$/i,
+          "mac-intel": /(x64|x86_64|intel).*\.dmg$/i,
+          "win-x64": /(x64|x86_64).*(setup\.exe|\.msi)$/i,
+          "win-arm": /(arm64|aarch64).*(setup\.exe|\.msi)$/i,
+          "linux-appimage": /\.appimage$/i,
+          "linux-pkg": /\.(deb|rpm)$/i,
+        };
+        const heroAsset = {
+          mac: "mac-arm",
+          win: "win-x64",
+          linux: "linux-appimage",
+        };
+        const heroLabel = {
+          mac: "Download for macOS",
+          win: "Download for Windows",
+          linux: "Download for Linux",
+        };
 
-        if (userAgent.indexOf("mac") !== -1) {
-          heroText.textContent = "Download for macOS (Apple Silicon)";
-          heroBtn.href =
-            "https://github.com/priteshraj10/Utter/releases/latest";
-        } else if (userAgent.indexOf("win") !== -1) {
-          heroText.textContent = "Download for Windows";
-          heroBtn.href =
-            "https://github.com/priteshraj10/Utter/releases/latest";
-        } else if (userAgent.indexOf("linux") !== -1) {
-          heroText.textContent = "Download for Linux (.AppImage)";
-          heroBtn.href =
-            "https://github.com/priteshraj10/Utter/releases/latest";
-        }
+        fetch("https://api.github.com/repos/" + REPO + "/releases/latest")
+          .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+          .then((release) => {
+            const assets = release.assets || [];
+            document.querySelectorAll("[data-asset]").forEach((a) => {
+              const file = assets.find((f) =>
+                patterns[a.dataset.asset].test(f.name),
+              );
+              if (file) a.href = file.browser_download_url;
+            });
+            if (platform) {
+              const file = assets.find((f) =>
+                patterns[heroAsset[platform]].test(f.name),
+              );
+              heroText.textContent =
+                heroLabel[platform] + " · " + release.tag_name;
+              if (file) heroBtn.href = file.browser_download_url;
+            }
+          })
+          .catch((status) => {
+            // Only a 404 means "no release yet"; on a network or rate-limit
+            // error, keep the links to the Releases page.
+            if (status !== 404) return;
+            document.querySelectorAll("[data-asset]").forEach((a) => {
+              a.textContent = "Build from source";
+              a.href = "https://github.com/" + REPO + "/blob/main/BUILD.md";
+            });
+            heroText.textContent = "Get Utter";
+            heroBtn.href = "#downloads";
+            const note = document.getElementById("release-note");
+            if (note) {
+              note.textContent =
+                "The first release is on its way. Until then, build Utter from source in a few commands.";
+            }
+          });
       })();
     </script>
   </body>

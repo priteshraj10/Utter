@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:site": "bunx @tailwindcss/cli@4.1.16 -i site-src/tailwind.css -o site/styles.css --minify",
     "preview": "vite preview",
     "tauri": "tauri",
     "lint": "eslint src",

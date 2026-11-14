@@ -1,0 +1,19 @@
+/* Source for site/styles.css — the landing page's precompiled stylesheet.
+   Rebuild after editing site/index.html: bun run build:site */
+@import "tailwindcss" source(none);
+@source "../site/index.html";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-zinc-950: #09090b;
+  --color-zinc-900: #121215;
+  --color-zinc-850: #18181b;
+  --color-zinc-800: #27272a;
+  --color-zinc-700: #3f3f46;
+
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+}
