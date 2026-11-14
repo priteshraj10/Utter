@@ -241,6 +241,25 @@ pub fn toggle_dictation(app: AppHandle) {
     crate::signal_handle::send_transcription_input(&app, "transcribe", "Floating bar");
 }
 
+/// Finishes the recording `binding_id` started and types the result (the
+/// floating bar's Stop button). Does nothing when nothing is recording, so a
+/// late click can never start a new recording.
+#[tauri::command]
+#[specta::specta]
+pub fn stop_dictation(app: AppHandle, binding_id: String) {
+    use crate::managers::audio::AudioRecordingManager;
+    use tauri::Manager;
+    if !crate::transcription_coordinator::is_transcribe_binding(&binding_id) {
+        return;
+    }
+    let recording = app
+        .try_state::<Arc<AudioRecordingManager>>()
+        .is_some_and(|audio| audio.is_recording());
+    if recording {
+        crate::signal_handle::send_transcription_input(&app, &binding_id, "Floating bar");
+    }
+}
+
 /// Shows the resting floating bar (if it is on and not hidden).
 #[tauri::command]
 #[specta::specta]

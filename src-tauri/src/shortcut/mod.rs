@@ -517,8 +517,18 @@ fn register_all_shortcuts_for_implementation(
                 id, binding.current_binding, implementation, e
             );
 
-            // Reset to default
-            binding.current_binding = default_binding.current_binding.clone();
+            // Reset to default. The macOS dictate default (`fn`) only works with
+            // HandyKeys, so fall back to Option+Space where it can't register.
+            binding.current_binding = if validate_shortcut_for_implementation(
+                &default_binding.current_binding,
+                implementation,
+            )
+            .is_ok()
+            {
+                default_binding.current_binding.clone()
+            } else {
+                "option+space".to_string()
+            };
             current_settings
                 .bindings
                 .insert(id.clone(), binding.clone());

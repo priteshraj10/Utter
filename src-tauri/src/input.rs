@@ -166,6 +166,34 @@ pub fn get_cursor_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
     enigo.location().ok()
 }
 
+/// Waits (up to `timeout`) until the user has let go of Ctrl, Option/Alt,
+/// Shift and Command, so a shortcut's own keys don't leak into keys we send.
+/// On platforms where the physical state can't be read, waits a short fixed
+/// time instead.
+pub fn wait_for_modifiers_released(timeout: std::time::Duration) {
+    #[cfg(target_os = "macos")]
+    {
+        #[link(name = "CoreGraphics", kind = "framework")]
+        extern "C" {
+            fn CGEventSourceFlagsState(state_id: i32) -> u64;
+        }
+        const HID_SYSTEM_STATE: i32 = 1;
+        // Shift, Control, Option, Command.
+        const HELD_MASK: u64 = 0x0002_0000 | 0x0004_0000 | 0x0008_0000 | 0x0010_0000;
+        let deadline = std::time::Instant::now() + timeout;
+        while std::time::Instant::now() < deadline {
+            // SAFETY: a pure query of the current keyboard state; no pointers.
+            let flags = unsafe { CGEventSourceFlagsState(HID_SYSTEM_STATE) };
+            if flags & HELD_MASK == 0 {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(15));
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    std::thread::sleep(timeout.min(std::time::Duration::from_millis(200)));
+}
+
 /// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.
 /// This ensures the paste works regardless of keyboard layout (e.g., Russian, AZERTY, DVORAK).
 /// Note: On Wayland, this may not work - callers should check for Wayland and use alternative methods.

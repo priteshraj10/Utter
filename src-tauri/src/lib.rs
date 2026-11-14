@@ -783,6 +783,7 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::change_voice_commands_setting,
             commands::utter::toggle_voice_note,
             commands::utter::toggle_dictation,
+            commands::utter::stop_dictation,
             commands::utter::show_floating_bar,
             commands::utter::hide_floating_bar,
             commands::utter::unhide_floating_bar,

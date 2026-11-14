@@ -355,6 +355,14 @@
           "voice_note": {
             "name": "Voice note",
             "description": "Saves the recording to Notes instead of typing it. Recordings longer than a minute are summarized."
+          },
+          "paste_last_transcript": {
+            "name": "Paste last transcript",
+            "description": "Types your most recent dictation again where the cursor is."
+          },
+          "copy_last_transcript": {
+            "name": "Copy last transcript",
+            "description": "Copies your most recent dictation to the clipboard."
           }
         },
         "errors": {
@@ -1002,7 +1010,8 @@
     "notice": {
       "empty": "Didn’t hear you",
       "silent": "Your mic is silent"
-    }
+    },
+    "stop": "Stop and type"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

@@ -308,20 +308,43 @@ const RecordingOverlay: React.FC = () => {
     </button>
   );
 
+  // Finish now and type what was said (Flow's stop button) — the way out of a
+  // tapped, hands-free recording without reaching for the shortcut.
+  const stopBtn = bindingId ? (
+    <button
+      className="sstop"
+      aria-label={t("overlay.stop")}
+      title={t("overlay.stop")}
+      onClick={() => void commands.stopDictation(bindingId)}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="4" y="4" width="8" height="8" rx="2" fill="currentColor" />
+      </svg>
+    </button>
+  ) : null;
+
   // dot (left) | waveform (center) | timer + cancel (right) — same structure for
   // pill & panel, so the Live morph is a pure width change.
+  // Laid out like Flow's bar: cancel (left) | waveform | label + stop (right).
+  // The timer gives way to a mode label so the pill keeps its width.
+  const modeLabel = bindingLabel ?? modeBadge;
   const listeningRow = (showTimer: boolean, showCancel: boolean) => (
     <div className="sbase">
       <div className="sbase-l">
-        <span className={`sdot ${captureReady ? "ready" : "arming"}`} />
+        {showCancel ? (
+          cancelBtn
+        ) : (
+          <span className={`sdot ${captureReady ? "ready" : "arming"}`} />
+        )}
       </div>
       {waveform}
       <div className="sbase-r">
-        {(bindingLabel ?? modeBadge) && (
-          <span className="smode-pill">{bindingLabel ?? modeBadge}</span>
+        {modeLabel ? (
+          <span className="smode-pill">{modeLabel}</span>
+        ) : (
+          showTimer && <span className="stimer">{fmtTime(elapsed)}</span>
         )}
-        {showTimer && <span className="stimer">{fmtTime(elapsed)}</span>}
-        {showCancel && cancelBtn}
+        {showCancel && stopBtn}
       </div>
     </div>
   );

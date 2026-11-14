@@ -1733,6 +1733,30 @@ impl ShortcutAction for CancelAction {
     }
 }
 
+/// Re-types (or copies) the most recent dictation, like Wispr Flow's
+/// "paste last transcript". Runs on release, once the shortcut's own keys are
+/// up, so the paste chord isn't mixed with them.
+struct LastTranscriptAction {
+    paste: bool,
+}
+
+impl ShortcutAction for LastTranscriptAction {
+    fn start(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+
+    fn stop(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        let app = app.clone();
+        let paste = self.paste;
+        std::thread::spawn(move || {
+            if paste {
+                crate::input::wait_for_modifiers_released(Duration::from_millis(1500));
+                crate::tray::paste_last_transcript(&app);
+            } else {
+                crate::tray::copy_last_transcript(&app);
+            }
+        });
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -1790,6 +1814,14 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "cancel".to_string(),
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "paste_last_transcript".to_string(),
+        Arc::new(LastTranscriptAction { paste: true }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "copy_last_transcript".to_string(),
+        Arc::new(LastTranscriptAction { paste: false }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

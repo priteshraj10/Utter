@@ -833,6 +833,14 @@ async toggleDictation() : Promise<void> {
     await TAURI_INVOKE("toggle_dictation");
 },
 /**
+ * Finishes the recording `binding_id` started and types the result (the
+ * floating bar's Stop button). Does nothing when nothing is recording, so a
+ * late click can never start a new recording.
+ */
+async stopDictation(bindingId: string) : Promise<void> {
+    await TAURI_INVOKE("stop_dictation", { bindingId });
+},
+/**
  * Shows the resting floating bar (if it is on and not hidden).
  */
 async showFloatingBar() : Promise<void> {

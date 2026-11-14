@@ -649,35 +649,57 @@ pub fn recreate_tray_icon(app: &AppHandle) {
     }
 }
 
-pub fn copy_last_transcript(app: &AppHandle) {
+/// The text of the most recent finished dictation (cleaned-up version when
+/// there is one), or `None` when there is nothing to reuse.
+pub fn latest_transcript(app: &AppHandle) -> Option<String> {
     let history_manager = app.state::<Arc<HistoryManager>>();
     let entry = match history_manager.get_latest_completed_entry() {
         Ok(Some(entry)) => entry,
         Ok(None) => {
-            warn!("No completed transcription history entries available for tray copy.");
-            return;
+            warn!("No completed transcription history entries available.");
+            return None;
         }
         Err(err) => {
             error!(
                 "Failed to fetch last completed transcription entry: {}",
                 err
             );
-            return;
+            return None;
         }
     };
 
     let text = last_transcript_text(&entry);
     if text.trim().is_empty() {
-        warn!("Last completed transcription is empty; skipping tray copy.");
-        return;
+        warn!("Last completed transcription is empty.");
+        return None;
     }
+    Some(text.to_string())
+}
+
+pub fn copy_last_transcript(app: &AppHandle) {
+    let Some(text) = latest_transcript(app) else {
+        return;
+    };
 
     if let Err(err) = app.clipboard().write_text(text) {
         error!("Failed to copy last transcript to clipboard: {}", err);
         return;
     }
 
-    info!("Copied last transcript to clipboard via tray.");
+    info!("Copied last transcript to clipboard.");
+}
+
+/// Types the most recent dictation again into the focused app. Call from a
+/// worker thread: pasting sleeps between steps.
+pub fn paste_last_transcript(app: &AppHandle) {
+    let Some(text) = latest_transcript(app) else {
+        return;
+    };
+    if let Err(err) = crate::clipboard::paste(text, app.clone()) {
+        error!("Failed to paste last transcript: {}", err);
+        return;
+    }
+    info!("Pasted last transcript.");
 }
 
 #[cfg(test)]

@@ -18,7 +18,7 @@
      the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
      since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
      in sync when these change. */
-  --ov-rest-w: 172px;
+  --ov-rest-w: 204px;
   --ov-pill-w: 184px;
   --ov-work-w: 216px;
   --ov-open-w: 392px;
@@ -241,14 +241,13 @@
 }
 .sbase-l {
   display: flex;
-  padding-left: 5px;
   align-items: center;
   justify-self: start;
 }
 .sbase-r {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   justify-self: end;
 }
 .sdot {
@@ -390,6 +389,36 @@
   transform: scale(1.05);
 }
 .sx:active {
+  transform: scale(0.95);
+}
+
+/* stop: finish and type now (filled square on the accent colour) */
+.sstop {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex: none;
+  padding: 0;
+  border: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--s-surface);
+  background: var(--s-accent);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.sstop svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+.sstop:hover {
+  transform: scale(1.06);
+}
+.sstop:active {
   transform: scale(0.95);
 }
 

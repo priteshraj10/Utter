@@ -87,6 +87,8 @@ export const GeneralSettings: React.FC = () => {
         <div className="space-y-6">
           <SettingsGroup title={t("settings.general.otherShortcuts")}>
             <ShortcutInput shortcutId="voice_note" grouped={true} />
+            <ShortcutInput shortcutId="paste_last_transcript" grouped={true} />
+            <ShortcutInput shortcutId="copy_last_transcript" grouped={true} />
             {aiEnabled && (
               <>
                 <ShortcutInput

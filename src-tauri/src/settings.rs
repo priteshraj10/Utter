@@ -1082,8 +1082,9 @@ pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "windows")]
     let default_shortcut = "ctrl+space";
+    // Hold fn to talk, tap it to keep recording (as in Wispr Flow).
     #[cfg(target_os = "macos")]
-    let default_shortcut = "option+space";
+    let default_shortcut = "fn";
     #[cfg(target_os = "linux")]
     let default_shortcut = "ctrl+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
@@ -1142,6 +1143,30 @@ pub fn get_default_settings() -> AppSettings {
             description: "Records a voice note into Notes instead of typing it.".to_string(),
             default_binding: default_note_shortcut.to_string(),
             current_binding: default_note_shortcut.to_string(),
+        },
+    );
+    #[cfg(target_os = "macos")]
+    let (default_paste_last, default_copy_last) = ("ctrl+command+v", "ctrl+command+c");
+    #[cfg(not(target_os = "macos"))]
+    let (default_paste_last, default_copy_last) = ("ctrl+alt+v", "ctrl+alt+c");
+    bindings.insert(
+        "paste_last_transcript".to_string(),
+        ShortcutBinding {
+            id: "paste_last_transcript".to_string(),
+            name: "Paste last transcript".to_string(),
+            description: "Types your most recent dictation again where the cursor is.".to_string(),
+            default_binding: default_paste_last.to_string(),
+            current_binding: default_paste_last.to_string(),
+        },
+    );
+    bindings.insert(
+        "copy_last_transcript".to_string(),
+        ShortcutBinding {
+            id: "copy_last_transcript".to_string(),
+            name: "Copy last transcript".to_string(),
+            description: "Copies your most recent dictation to the clipboard.".to_string(),
+            default_binding: default_copy_last.to_string(),
+            current_binding: default_copy_last.to_string(),
         },
     );
     bindings.insert(
