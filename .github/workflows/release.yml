@@ -27,16 +27,26 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
+            const version = `v${{ steps.get-version.outputs.version }}`;
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const existing = releases.data.find(r => r.draft && (r.tag_name === version || r.name === version));
+            if (existing) {
+              console.log(`Reusing existing draft release: ${existing.id} (${version})`);
+              return existing.id;
+            }
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `v${{ steps.get-version.outputs.version }}`,
-              name: `v${{ steps.get-version.outputs.version }}`,
+              tag_name: version,
+              name: version,
               draft: true,
               prerelease: false,
               generate_release_notes: true
-            })
-            return data.id
+            });
+            return data.id;
 
   publish-tauri:
     permissions:
