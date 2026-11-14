@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { ShieldCheck, Cloud, FileText, Mic, MessageSquare, ChevronRight } from "lucide-react";
+import {
+  ShieldCheck,
+  Cloud,
+  FileText,
+  Mic,
+  MessageSquare,
+  ChevronRight,
+} from "lucide-react";
 import {
   commands,
   events,
@@ -54,7 +61,10 @@ export const HomePage: React.FC = () => {
     const now = new Date();
     const isToday = now.toDateString() === date.toDateString();
     if (isToday) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
@@ -207,7 +217,9 @@ export const HomePage: React.FC = () => {
                   <li key={note.id}>
                     <button
                       type="button"
-                      onClick={() => navigateTo("notes", undefined, "notes", note.id)}
+                      onClick={() =>
+                        navigateTo("notes", undefined, "notes", note.id)
+                      }
                       className="w-full text-left p-2 rounded-lg hover:bg-accent/60 transition-colors group flex items-start justify-between gap-2"
                     >
                       <div className="min-w-0 flex-1">
@@ -219,9 +231,15 @@ export const HomePage: React.FC = () => {
                         </p>
                       </div>
                       {note.kind === "voice" || note.kind === "meeting" ? (
-                        <Mic size={13} className="shrink-0 mt-1 text-muted-foreground" />
+                        <Mic
+                          size={13}
+                          className="shrink-0 mt-1 text-muted-foreground"
+                        />
                       ) : (
-                        <FileText size={13} className="shrink-0 mt-1 text-muted-foreground" />
+                        <FileText
+                          size={13}
+                          className="shrink-0 mt-1 text-muted-foreground"
+                        />
                       )}
                     </button>
                   </li>
@@ -267,7 +285,10 @@ export const HomePage: React.FC = () => {
                           {formatTime(chat.updated_at)}
                         </p>
                       </div>
-                      <ChevronRight size={13} className="shrink-0 mt-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ChevronRight
+                        size={13}
+                        className="shrink-0 mt-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
                     </button>
                   </li>
                 ))}

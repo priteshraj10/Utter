@@ -139,8 +139,12 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   const { t, i18n } = useTranslation();
   const { getSetting } = useSettings();
   const osType = useOsType();
-  const [tab, setTab] = useState<Tab>(() => takePendingNotesTab() ?? initialTab);
-  const [selectedId, setSelectedId] = useState<number | null>(() => takePendingNoteId());
+  const [tab, setTab] = useState<Tab>(
+    () => takePendingNotesTab() ?? initialTab,
+  );
+  const [selectedId, setSelectedId] = useState<number | null>(() =>
+    takePendingNoteId(),
+  );
   useEffect(() => {
     const onNavigate = (event: Event) => {
       const detail = (
