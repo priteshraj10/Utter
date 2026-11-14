@@ -14,7 +14,7 @@ Utter is an open-source, private desktop dictation studio built with Tauri 2.x, 
 - **System Call & Meeting Recording (Teams, Zoom, Meet)**: Capture both your microphone and computer audio in Notes so multi-participant meetings and browser calls include every speaker. Includes speaker diarization and automated summary action items.
 - **Offline Speech Recognition**: Local transcription powered by **Whisper** (Small / Medium / Turbo / Large with Apple Silicon Metal & Vulkan GPU acceleration) and **Parakeet**, paired with **Silero VAD** for voice activity detection.
 - **Mixed Hindi + English (Hinglish) Support**: Transcribes natural multilingual code-switching seamlessly without transliteration errors or unwanted translation into pure English.
-- **Context-Aware AI Cleanup & Tone Adaptation**: Strips filler words (*um, uh, like*), repairs self-corrections, and matches writing style (**Formal**, **Casual**, **Very Casual**, **Concise**, **Email**, **Bullet Notes**, **Code & Technical**) according to the active frontmost app (*Slack, Mail, Notion, VS Code, Cursor, Terminal*).
+- **Context-Aware AI Cleanup & Tone Adaptation**: Strips filler words (_um, uh, like_), repairs self-corrections, and matches writing style (**Formal**, **Casual**, **Very Casual**, **Concise**, **Email**, **Bullet Notes**, **Code & Technical**) according to the active frontmost app (_Slack, Mail, Notion, VS Code, Cursor, Terminal_).
 - **Apple Intelligence & Local Intelligence**: On Apple Silicon Macs, uses on-device Apple Intelligence natively without API keys or cloud dependencies. Also supports Ollama, Groq, Anthropic, OpenAI, OpenRouter, and custom endpoints.
 - **Fix by Voice & In-Place Rewrites**: Speak editing instructions to rewrite the last dictation directly before your cursor, or use Command Mode on selected text.
 - **Whisper Mode (Quiet Speech Boost)**: Speak softly in public or late at night with dynamic soft-knee gain amplification without audio clipping.
@@ -24,26 +24,27 @@ Utter is an open-source, private desktop dictation studio built with Tauri 2.x, 
 
 ## Default Shortcuts
 
-| Action | macOS | Windows / Linux | Description |
-| :--- | :--- | :--- | :--- |
-| **Dictate** | `fn` *(or `⌥Space`)* | `Ctrl+Space` | Hold to speak, release to type into active app |
-| **Command Mode** | `⌃⌥Space` | `Ctrl+Alt+Space` | Edit selected text or rewrite last dictation by voice |
-| **Voice Notes & Meetings** | `⌃⌥N` | `Ctrl+Alt+N` | Record meeting or voice note directly into Notes |
-| **AI Cleanup Toggle** | `⌥⇧Space` | `Ctrl+Shift+Space` | Dictate with AI post-processing prompt |
-| **Paste Last Dictation** | `⌃⌘V` | `Ctrl+Win+V` | Re-paste the most recent dictation |
-| **Copy Last Dictation** | `⌃⌘C` | `Ctrl+Win+C` | Copy the most recent dictation to clipboard |
-| **Cancel** | `Escape` | `Escape` | Discard current recording or transcribing |
+| Action                     | macOS                | Windows / Linux    | Description                                           |
+| :------------------------- | :------------------- | :----------------- | :---------------------------------------------------- |
+| **Dictate**                | `fn` _(or `⌥Space`)_ | `Ctrl+Space`       | Hold to speak, release to type into active app        |
+| **Command Mode**           | `⌃⌥Space`            | `Ctrl+Alt+Space`   | Edit selected text or rewrite last dictation by voice |
+| **Voice Notes & Meetings** | `⌃⌥N`                | `Ctrl+Alt+N`       | Record meeting or voice note directly into Notes      |
+| **AI Cleanup Toggle**      | `⌥⇧Space`            | `Ctrl+Shift+Space` | Dictate with AI post-processing prompt                |
+| **Paste Last Dictation**   | `⌃⌘V`                | `Ctrl+Win+V`       | Re-paste the most recent dictation                    |
+| **Copy Last Dictation**    | `⌃⌘C`                | `Ctrl+Win+C`       | Copy the most recent dictation to clipboard           |
+| **Cancel**                 | `Escape`             | `Escape`           | Discard current recording or transcribing             |
 
-*All shortcuts are customizable in **Settings** (Push-to-Talk, Tap-to-Toggle, or Hybrid).*
+_All shortcuts are customizable in **Settings** (Push-to-Talk, Tap-to-Toggle, or Hybrid)._
 
 ---
 
 ## Installation
 
 ### Download from GitHub Releases
+
 Pre-built binaries for macOS (Apple Silicon / Intel), Windows, and Linux are published on [GitHub Releases](https://github.com/priteshraj10/Utter/releases).
 
-- **macOS**: Download the `.dmg`, drag Utter to `/Applications`. If macOS displays an *"unidentified developer"* prompt on first launch:
+- **macOS**: Download the `.dmg`, drag Utter to `/Applications`. If macOS displays an _"unidentified developer"_ prompt on first launch:
   1. Open **System Settings → Privacy & Security**.
   2. Scroll to the Security section and click **Open Anyway**.
   3. Grant **Accessibility** and **Microphone** permissions when prompted.
@@ -55,6 +56,7 @@ Pre-built binaries for macOS (Apple Silicon / Intel), Windows, and Linux are pub
 ## Development & Build
 
 ### Prerequisites
+
 - [Rust](https://rustup.rs/) (latest stable)
 - [Bun](https://bun.sh/) package manager
 
