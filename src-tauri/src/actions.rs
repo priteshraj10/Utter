@@ -1283,10 +1283,14 @@ impl ShortcutAction for TranscribeAction {
             } else {
                 let hm = app.state::<Arc<HistoryManager>>();
                 crate::recovery::start_session(hm.recordings_dir().to_path_buf(), "note");
+                if get_settings(app).record_system_audio {
+                    crate::system_audio::start();
+                }
             }
         } else {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
+            crate::system_audio::discard();
             tm.cancel_stream();
             utils::hide_recording_overlay(app);
             set_tray_state(app, TrayIconState::Idle);
@@ -1373,7 +1377,22 @@ impl ShortcutAction for TranscribeAction {
             };
 
             let stop_recording_time = Instant::now();
-            if let Some(mut samples) = rm.stop_recording(&binding_id, cancel_generation) {
+            let mut system_audio =
+                if mode == DictationMode::Note && get_settings(&ah).record_system_audio {
+                    crate::system_audio::stop()
+                } else {
+                    crate::system_audio::discard();
+                    None
+                };
+            let mut recorded_samples = rm.stop_recording(&binding_id, cancel_generation);
+            if recorded_samples.is_none() && mode == DictationMode::Note {
+                if let Some(system) = system_audio.take() {
+                    if !system.is_empty() {
+                        recorded_samples = Some(system);
+                    }
+                }
+            }
+            if let Some(mut samples) = recorded_samples {
                 // Read now: by the time transcribing ends, another take may
                 // have replaced it.
                 let input_silent = rm.last_input_silent();
@@ -1386,10 +1405,15 @@ impl ShortcutAction for TranscribeAction {
                 if rm.was_cancelled_since(cancel_generation) {
                     debug!("Transcription operation cancelled after recording stop");
                     crate::recovery::discard_session();
+                    crate::system_audio::discard();
                     tm.cancel_stream();
                     utils::hide_recording_overlay(&ah);
                     set_tray_state(&ah, TrayIconState::Idle);
                     return;
+                }
+
+                if let Some(call_samples) = system_audio.as_deref() {
+                    crate::system_audio::mix_into(&mut samples, call_samples);
                 }
 
                 if samples.is_empty() {

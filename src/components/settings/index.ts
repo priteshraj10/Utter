@@ -11,6 +11,7 @@ export { ModelsSettings } from "./models/ModelsSettings";
 export { MicrophoneSelector } from "./MicrophoneSelector";
 export { ChannelSelector } from "./ChannelSelector";
 export { ClamshellMicrophoneSelector } from "./ClamshellMicrophoneSelector";
+export { RecordSystemAudio } from "./RecordSystemAudio";
 export { OutputDeviceSelector } from "./OutputDeviceSelector";
 export { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
 export { ShortcutActivationSetting } from "./ShortcutActivation";

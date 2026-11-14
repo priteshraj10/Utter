@@ -491,6 +491,10 @@
       "preferBuiltinMic": {
         "label": "Use built-in mic with Bluetooth headphones",
         "description": "Headphone mics like AirPods switch to call quality and often come through too quiet to dictate. Utter uses your Mac’s microphone instead, and your headphones keep full sound."
+      },
+      "recordSystemAudio": {
+        "label": "Record meeting calls (Teams, Zoom, Meet)",
+        "description": "Records the other people in your calls alongside your microphone in Notes so meeting notes include both sides. Audio stays on this Mac."
       }
     },
     "advanced": {

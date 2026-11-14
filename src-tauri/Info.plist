@@ -4,5 +4,7 @@
 <dict>
   <key>NSMicrophoneUsageDescription</key>
   <string>Request microphone access to transcribe audio locally</string>
+  <key>NSAudioCaptureUsageDescription</key>
+  <string>Utter records the other people in your calls (Teams, Zoom, Meet) so meeting notes include both sides. Audio stays on this Mac.</string>
 </dict>
 </plist>

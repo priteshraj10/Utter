@@ -113,6 +113,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
         keep_cancelled_recording(app, samples);
     }
     crate::recovery::discard_session();
+    crate::system_audio::discard();
 
     // Abandon any live streaming transcription, and stop a transcription
     // already in progress

@@ -865,6 +865,12 @@ async changePreferBuiltinMicSetting(enabled: boolean) : Promise<void> {
     await TAURI_INVOKE("change_prefer_builtin_mic_setting", { enabled });
 },
 /**
+ * Turns recording meeting call audio (Teams, Zoom, Meet) on or off.
+ */
+async changeRecordSystemAudioSetting(enabled: boolean) : Promise<void> {
+    await TAURI_INVOKE("change_record_system_audio_setting", { enabled });
+},
+/**
  * Turns the floating bar on or off.
  */
 async changeFloatingBarSetting(enabled: boolean) : Promise<void> {
@@ -1453,6 +1459,11 @@ floating_bar?: boolean;
  * hears nothing usable).
  */
 prefer_builtin_mic?: boolean; 
+/**
+ * Record meeting call audio (from Teams, Zoom, Meet, and browser calls)
+ * alongside your microphone in Notes.
+ */
+record_system_audio?: boolean; 
 /**
  * Run AI cleanup on every dictation, not only the post-processing
  * shortcut. Needs post-processing to be enabled with a provider.

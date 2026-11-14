@@ -109,6 +109,13 @@ pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
     resampled.finish()
 }
 
+/// Mono audio at `rate` in, 16 kHz (the transcription rate) out.
+pub fn resample_to_16k(samples: &[f32], rate: u32) -> Result<Vec<f32>> {
+    let mut resampled = Resampled::new(rate)?;
+    resampled.push(samples.iter().copied())?;
+    resampled.finish()
+}
+
 /// Mono audio at the file's rate in, 16 kHz out, one resampler step at a
 /// time, so the file's audio is never held whole at its own rate.
 struct Resampled {

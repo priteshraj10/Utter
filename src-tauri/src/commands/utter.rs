@@ -297,6 +297,15 @@ pub fn change_prefer_builtin_mic_setting(
     audio.invalidate_device_cache();
 }
 
+/// Turns recording meeting call audio (Teams, Zoom, Meet) on or off.
+#[tauri::command]
+#[specta::specta]
+pub fn change_record_system_audio_setting(app: AppHandle, enabled: bool) {
+    let mut s = settings::get_settings(&app);
+    s.record_system_audio = enabled;
+    settings::write_settings(&app, s);
+}
+
 /// Turns the floating bar on or off.
 #[tauri::command]
 #[specta::specta]

@@ -27,6 +27,7 @@ mod settings;
 mod shortcut;
 mod signal_handle;
 mod speakers;
+pub mod system_audio;
 mod system_languages;
 mod transcription_coordinator;
 mod tray;
@@ -789,6 +790,7 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::unhide_floating_bar,
             commands::utter::change_floating_bar_setting,
             commands::utter::change_prefer_builtin_mic_setting,
+            commands::utter::change_record_system_audio_setting,
             commands::utter::set_snippets,
             commands::utter::set_app_styles,
             commands::utter::change_auto_cleanup_setting,
