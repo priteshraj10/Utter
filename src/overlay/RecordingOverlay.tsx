@@ -12,6 +12,8 @@ import type {
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+import { keycapLabel } from "@/lib/utils/keyboard";
+import { useOsType } from "@/hooks/useOsType";
 
 type OverlayState =
   | "idle"
@@ -22,7 +24,7 @@ type OverlayState =
 
 // Number of reactive bars in the waveform (the simple, smoothed style shared by
 // every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
-const WAVE_BARS = 9;
+const WAVE_BARS = 16;
 
 // Only call out a model load in the Live preview once it has run this long.
 // Warm loads finish in well under this (~0.2s on Apple Silicon, ~1.5s on a
@@ -80,6 +82,9 @@ const RecordingOverlay: React.FC = () => {
   const capRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
   const direction = getLanguageDirection(i18n.language);
+  const osType = useOsType();
+  // The dictate shortcut, shown on the resting bar ("Click or hold fn…").
+  const [dictateKey, setDictateKey] = useState<string | null>(null);
 
   useEffect(() => {
     const setupEventListeners = async () => {
@@ -104,6 +109,9 @@ const RecordingOverlay: React.FC = () => {
             setPosition(
               settings.data.overlay_position === "top" ? "top" : "bottom",
             );
+            const binding =
+              settings.data.bindings?.transcribe?.current_binding ?? null;
+            setDictateKey(binding);
             if (settings.data.translate_to_english) {
               setModeBadge(t("overlay.modes.translate"));
             } else {
@@ -275,7 +283,7 @@ const RecordingOverlay: React.FC = () => {
         <i
           key={i}
           style={{
-            height: `${Math.max(3, Math.min(18, 3 + Math.pow(v, 0.7) * 15))}px`,
+            height: `${Math.max(2, Math.min(16, 2 + Math.pow(v, 0.7) * 14))}px`,
           }}
         />
       ))}
@@ -351,13 +359,19 @@ const RecordingOverlay: React.FC = () => {
 
   // spinner (left) | label (center) | cancel (right) — same 3-zone grid as the
   // listening row, so the label is centered.
+  // Processing: the waveform turns into a row of pulsing dots, no text (the
+  // label stays for screen readers).
   const workingRow = (label: string, showCancel: boolean) => (
     <div className="sbase">
-      <div className="sbase-l">
-        <span className="sspinner" />
-      </div>
-      <span className="swork-label">{label}</span>
-      <div className="sbase-r">{showCancel && cancelBtn}</div>
+      <div className="sbase-l">{showCancel && cancelBtn}</div>
+      <span className="sdots" role="status" aria-label={label}>
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+      <div className="sbase-r" />
     </div>
   );
 
@@ -377,6 +391,9 @@ const RecordingOverlay: React.FC = () => {
   // Resting floating bar between recordings: a slim pill that opens into a
   // "Click to dictate" button on hover or focus. Right-click hides it.
   if (state === "idle") {
+    const idleHint = dictateKey
+      ? t("overlay.idleHintKey", { key: keycapLabel(dictateKey, osType) })
+      : t("overlay.idleHint");
     return (
       <div
         dir={direction}
@@ -386,7 +403,7 @@ const RecordingOverlay: React.FC = () => {
           type="button"
           className={`sidle ${notice ? "notice" : ""}`}
           title={t("overlay.idleTitle")}
-          aria-label={t("overlay.idleHint")}
+          aria-label={idleHint}
           onClick={() => void commands.toggleDictation()}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -398,7 +415,7 @@ const RecordingOverlay: React.FC = () => {
             <i />
             <i />
           </span>
-          <span className="sidle-label">{notice ?? t("overlay.idleHint")}</span>
+          <span className="sidle-label">{notice ?? idleHint}</span>
         </button>
       </div>
     );
@@ -412,7 +429,7 @@ const RecordingOverlay: React.FC = () => {
       <div
         className={`scard compact ${working && isVisible ? "cworking" : ""}`}
       >
-        {working ? workingRow(workLabel, true) : listeningRow(true, true)}
+        {working ? workingRow(workLabel, true) : listeningRow(false, true)}
       </div>
     </div>
   );

@@ -548,3 +548,129 @@
     transition: none;
   }
 }
+
+/* ============================================================
+   Flow-style bar: monochrome near-black pill, dense white waveform, cancel on
+   the left, red stop on the right, pulsing dots while processing. Kept last so
+   it overrides the earlier colour and sizing rules.
+   ============================================================ */
+:root {
+  --s-surface: #0b0b0b;
+  --s-border: rgba(255, 255, 255, 0.16);
+  --s-hair: rgba(255, 255, 255, 0.1);
+  --s-text: #ffffff;
+  --s-muted: rgba(255, 255, 255, 0.6);
+  --s-stop: #ef4444;
+}
+.scard,
+.scard.compact {
+  background: var(--s-surface);
+  border-color: var(--s-border);
+  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.6);
+}
+.swave {
+  gap: 2px;
+  padding-right: 0;
+  height: 16px;
+}
+.swave i {
+  width: 2px;
+  max-height: 16px;
+  border-radius: 1px;
+  background: #fff;
+  box-shadow: none;
+}
+.swave.arming i {
+  background: #fff;
+}
+.sx {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.sx:hover {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+.sstop {
+  background: var(--s-stop);
+  color: #fff;
+}
+.smode-pill {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* processing dots */
+.sdots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+}
+.sdots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.35;
+  animation: sdots-pulse 1s ease-in-out infinite;
+}
+.sdots i:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.sdots i:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.sdots i:nth-child(4) {
+  animation-delay: 0.36s;
+}
+.sdots i:nth-child(5) {
+  animation-delay: 0.48s;
+}
+@keyframes sdots-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* resting bar: thin dark pill that opens into the hint on hover */
+.sidle {
+  background: rgba(11, 11, 11, 0.85);
+}
+.sidle:hover,
+.sidle:focus-visible,
+.sidle.notice {
+  width: 210px;
+  background: var(--s-surface);
+  color: #fff;
+}
+.sidle:hover .sidle-label,
+.sidle:focus-visible .sidle-label,
+.sidle.notice .sidle-label {
+  max-width: 170px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sdots i {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/* Resting bar at rest: a plain grey pill, no outline, no bars until hovered. */
+.sidle:not(:hover):not(:focus-visible):not(.notice) {
+  width: 40px;
+  height: 8px;
+  border-color: transparent;
+  background: rgba(110, 110, 110, 0.9);
+}
+.sidle:not(:hover):not(:focus-visible):not(.notice) .sidle-bars {
+  display: none;
+}
