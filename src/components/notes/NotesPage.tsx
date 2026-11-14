@@ -43,6 +43,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { commands, events, type Note } from "@/bindings";
+import {
+  NAVIGATE_EVENT,
+  takePendingNotesTab,
+  takePendingNoteId,
+} from "@/lib/navigation";
 import { useSettings } from "@/hooks/useSettings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
@@ -134,14 +139,34 @@ export const NotesPage: React.FC<{ initialTab?: Tab }> = ({
   const { t, i18n } = useTranslation();
   const { getSetting } = useSettings();
   const osType = useOsType();
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [tab, setTab] = useState<Tab>(() => takePendingNotesTab() ?? initialTab);
+  const [selectedId, setSelectedId] = useState<number | null>(() => takePendingNoteId());
   useEffect(() => {
-    setTab(initialTab);
+    const onNavigate = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          notesTab?: Tab | null;
+          noteId?: number | null;
+        }>
+      ).detail;
+      if (detail?.notesTab) {
+        setTab(detail.notesTab);
+      }
+      if (detail?.noteId != null) {
+        setSelectedId(detail.noteId);
+      }
+    };
+    window.addEventListener(NAVIGATE_EVENT, onNavigate);
+    return () => window.removeEventListener(NAVIGATE_EVENT, onNavigate);
+  }, []);
+  useEffect(() => {
+    const pendingTab = takePendingNotesTab();
+    if (pendingTab) setTab(pendingTab as Tab);
+    else setTab(initialTab);
   }, [initialTab]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<NoteFilter>("all");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [draft, setDraft] = useState<{ title: string; body: string } | null>(
     null,
   );

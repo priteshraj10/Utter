@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { ShieldCheck, Cloud } from "lucide-react";
+import { ShieldCheck, Cloud, FileText, Mic, MessageSquare, ChevronRight } from "lucide-react";
 import {
   commands,
   events,
+  type Note,
+  type NoteChatSummary,
   type PrivacyStatus,
   type UsageStats,
 } from "@/bindings";
@@ -20,6 +22,8 @@ export const HomePage: React.FC = () => {
   const osType = useOsType();
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [privacy, setPrivacy] = useState<PrivacyStatus | null>(null);
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
+  const [recentChats, setRecentChats] = useState<NoteChatSummary[]>([]);
 
   const dictateShortcut = getSetting("bindings")?.transcribe?.current_binding;
 
@@ -30,6 +34,12 @@ export const HomePage: React.FC = () => {
       });
     refresh();
     commands.getPrivacyStatus().then(setPrivacy);
+    commands.listNotes(null).then((res) => {
+      if (res.status === "ok") setRecentNotes(res.data.slice(0, 3));
+    });
+    commands.listNoteChats().then((res) => {
+      if (res.status === "ok") setRecentChats(res.data.slice(0, 3));
+    });
     // A new dictation lands in History; refresh the stats with it.
     const unlisten = events.historyUpdatePayload.listen((event) => {
       if (event.payload.action === "added") refresh();
@@ -38,6 +48,16 @@ export const HomePage: React.FC = () => {
       unlisten.then((fn) => fn());
     };
   }, []);
+
+  const formatTime = (seconds: number) => {
+    const date = new Date(seconds * 1000);
+    const now = new Date();
+    const isToday = now.toDateString() === date.toDateString();
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
 
   const statItems = stats
     ? [
@@ -123,9 +143,9 @@ export const HomePage: React.FC = () => {
           <HistorySettings />
         </div>
 
-        {stats && (
-          <aside className="order-first lg:order-none">
-            <div className="rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-0">
+        <aside className="order-first space-y-4 lg:order-none">
+          {stats && (
+            <div className="rounded-2xl border border-border bg-card p-5">
               <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-1">
                 {statItems.map(({ value, label }) => (
                   <div key={label} className="flex items-baseline gap-2">
@@ -163,8 +183,102 @@ export const HomePage: React.FC = () => {
                 </div>
               )}
             </div>
-          </aside>
-        )}
+          )}
+
+          {/* Recent Notes */}
+          <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                <FileText size={15} className="text-muted-foreground" />
+                {t("home.recentNotes")}
+              </h3>
+              <button
+                type="button"
+                onClick={() => navigateTo("notes")}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-0.5"
+              >
+                {t("home.viewAll")}
+                <ChevronRight size={13} />
+              </button>
+            </div>
+            {recentNotes.length > 0 ? (
+              <ul className="space-y-1.5">
+                {recentNotes.map((note) => (
+                  <li key={note.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("notes", undefined, "notes", note.id)}
+                      className="w-full text-left p-2 rounded-lg hover:bg-accent/60 transition-colors group flex items-start justify-between gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
+                          {note.title || t("notes.untitled")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatTime(note.created_at)}
+                        </p>
+                      </div>
+                      {note.kind === "voice" || note.kind === "meeting" ? (
+                        <Mic size={13} className="shrink-0 mt-1 text-muted-foreground" />
+                      ) : (
+                        <FileText size={13} className="shrink-0 mt-1 text-muted-foreground" />
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-muted-foreground py-2 text-center">
+                {t("home.noRecentNotes")}
+              </p>
+            )}
+          </div>
+
+          {/* Ask your notes / Recent Chats */}
+          <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                <MessageSquare size={15} className="text-muted-foreground" />
+                {t("home.recentChats")}
+              </h3>
+              <button
+                type="button"
+                onClick={() => navigateTo("notes", undefined, "ask")}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-0.5"
+              >
+                {t("home.viewAll")}
+                <ChevronRight size={13} />
+              </button>
+            </div>
+            {recentChats.length > 0 ? (
+              <ul className="space-y-1.5">
+                {recentChats.map((chat) => (
+                  <li key={chat.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("notes", undefined, "ask")}
+                      className="w-full text-left p-2 rounded-lg hover:bg-accent/60 transition-colors group flex items-start justify-between gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
+                          {chat.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatTime(chat.updated_at)}
+                        </p>
+                      </div>
+                      <ChevronRight size={13} className="shrink-0 mt-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-muted-foreground py-2 text-center">
+                {t("home.noRecentChats")}
+              </p>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );

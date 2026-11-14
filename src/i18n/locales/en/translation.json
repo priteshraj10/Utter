@@ -1256,7 +1256,12 @@
       "onDevice": "Everything stays on this Mac",
       "cloud": "AI cleanup sends text to {{provider}}",
       "change": "Change"
-    }
+    },
+    "recentNotes": "Recent notes",
+    "recentChats": "Ask your notes",
+    "viewAll": "View all",
+    "noRecentNotes": "No notes yet",
+    "noRecentChats": "No chats yet"
   },
   "app": {
     "loading": "Loading…"
