@@ -347,6 +347,38 @@ pub fn change_whisper_mode_setting(app: AppHandle, enabled: bool) -> Result<(), 
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_keep_audio_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.keep_audio = enabled;
+    settings::write_settings(&app, s);
+    Ok(())
+}
+
+/// Where your words go: on this Mac only, or also to a cloud AI provider.
+#[derive(serde::Serialize, specta::Type)]
+pub struct PrivacyStatus {
+    /// True when nothing you say or type is sent off this computer.
+    pub on_device: bool,
+    /// The cloud AI provider's name when text is sent to one.
+    pub cloud_provider: Option<String>,
+    /// Whether audio recordings are kept after typing.
+    pub keeps_audio: bool,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_privacy_status(app: AppHandle) -> PrivacyStatus {
+    let s = settings::get_settings(&app);
+    let cloud_provider = s.cloud_ai_provider().map(|p| p.label.clone());
+    PrivacyStatus {
+        on_device: cloud_provider.is_none(),
+        cloud_provider,
+        keeps_audio: s.keep_audio,
+    }
+}
+
 /// Transforms `text` using spoken snippets and either a built-in style prompt ID
 /// or a free-form command instruction.
 #[tauri::command]

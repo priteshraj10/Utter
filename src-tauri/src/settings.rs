@@ -607,6 +607,10 @@ pub struct AppSettings {
     pub snippets: Vec<Snippet>,
     #[serde(default)]
     pub app_styles: Vec<AppStyle>,
+    /// Keep each dictation's audio recording after it is typed. Off: the
+    /// recording is deleted as soon as the text is saved.
+    #[serde(default = "default_true")]
+    pub keep_audio: bool,
 }
 
 fn default_true() -> bool {
@@ -1077,6 +1081,22 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+/// Whether `url` points at this computer (an AI server such as Ollama running
+/// locally), so requests to it never leave the Mac.
+pub fn is_local_url(url: &str) -> bool {
+    let rest = url.split("://").nth(1).unwrap_or(url);
+    let host_port = rest.split('/').next().unwrap_or("");
+    let host = if let Some(stripped) = host_port.strip_prefix('[') {
+        stripped.split(']').next().unwrap_or("")
+    } else {
+        host_port.split(':').next().unwrap_or("")
+    };
+    matches!(
+        host.to_ascii_lowercase().as_str(),
+        "localhost" | "127.0.0.1" | "::1" | "0.0.0.0"
+    ) || host.ends_with(".localhost")
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -1255,6 +1275,7 @@ pub fn get_default_settings() -> AppSettings {
         context_awareness: true,
         snippets: Vec::new(),
         app_styles: Vec::new(),
+        keep_audio: true,
     }
 }
 
@@ -1273,6 +1294,24 @@ impl AppSettings {
     pub fn language_detection_window_samples(&self) -> usize {
         let (min, max) = LANGUAGE_DETECTION_WINDOW_SECS.into_inner();
         self.language_detection_window_secs.clamp(min, max) as usize * 16_000
+    }
+
+    /// The AI provider that text is sent to over the internet, when one is set
+    /// up (a model chosen) and isn't on this Mac. `None`: nothing you say or
+    /// type leaves the computer.
+    pub fn cloud_ai_provider(&self) -> Option<&PostProcessProvider> {
+        let provider = self.active_post_process_provider()?;
+        if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+            return None;
+        }
+        let has_model = self
+            .post_process_models
+            .get(&provider.id)
+            .is_some_and(|m| !m.trim().is_empty());
+        if !has_model || is_local_url(&provider.base_url) {
+            return None;
+        }
+        Some(provider)
     }
 
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
@@ -1628,6 +1667,17 @@ pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeri
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn local_ai_servers_count_as_on_device() {
+        use super::is_local_url;
+        assert!(is_local_url("http://localhost:11434/v1"));
+        assert!(is_local_url("http://127.0.0.1:8080"));
+        assert!(is_local_url("http://[::1]:1234/v1"));
+        assert!(is_local_url("http://ollama.localhost/v1"));
+        assert!(!is_local_url("https://api.openai.com/v1"));
+        assert!(!is_local_url("https://localhost.example.com/v1"));
+    }
+
     use super::*;
 
     #[test]

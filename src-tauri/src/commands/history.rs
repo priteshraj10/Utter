@@ -41,6 +41,9 @@ pub async fn get_audio_file_path(
     file_name: String,
 ) -> Result<String, String> {
     let path = history_manager.get_audio_file_path(&file_name);
+    if !path.exists() {
+        return Err("This recording wasn't kept".to_string());
+    }
     path.to_str()
         .ok_or_else(|| "Invalid file path".to_string())
         .map(|s| s.to_string())

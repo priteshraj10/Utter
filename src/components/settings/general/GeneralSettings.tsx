@@ -17,6 +17,7 @@ import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 import { PreferredLanguages } from "../PreferredLanguages";
 import { ChineseScriptSetting } from "../ChineseScript";
+import { KeepAudio } from "../KeepAudio";
 import { isChinese } from "@/lib/utils/languageSuggestions";
 
 export const GeneralSettings: React.FC = () => {
@@ -108,6 +109,10 @@ export const GeneralSettings: React.FC = () => {
               <ChineseScriptSetting grouped={true} />
             </SettingsGroup>
           )}
+
+          <SettingsGroup title={t("settings.privacy.title")}>
+            <KeepAudio grouped={true} />
+          </SettingsGroup>
 
           <SettingsGroup title={t("settings.sound.title")}>
             <ChannelSelector grouped={true} />

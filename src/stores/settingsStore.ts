@@ -215,6 +215,7 @@ const settingUpdaters: {
     commands.changeLanguageDetectionWindowSetting(value as number),
   auto_cleanup: (value) => commands.changeAutoCleanupSetting(value as boolean),
   whisper_mode: (value) => commands.changeWhisperModeSetting(value as boolean),
+  keep_audio: (value) => commands.changeKeepAudioSetting(value as boolean),
   voice_commands: (value) =>
     commands.changeVoiceCommandsSetting(value as boolean),
   context_awareness: (value) =>

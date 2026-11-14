@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { commands, events, type UsageStats } from "@/bindings";
+import { ShieldCheck, Cloud } from "lucide-react";
+import {
+  commands,
+  events,
+  type PrivacyStatus,
+  type UsageStats,
+} from "@/bindings";
 import { formatKeyCombination } from "@/lib/utils/keyboard";
 import { useOsType } from "@/hooks/useOsType";
 import { useSettings } from "@/hooks/useSettings";
@@ -13,6 +19,7 @@ export const HomePage: React.FC = () => {
   const { getSetting } = useSettings();
   const osType = useOsType();
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const [privacy, setPrivacy] = useState<PrivacyStatus | null>(null);
 
   const dictateShortcut = getSetting("bindings")?.transcribe?.current_binding;
 
@@ -22,6 +29,7 @@ export const HomePage: React.FC = () => {
         if (res.status === "ok") setStats(res.data);
       });
     refresh();
+    commands.getPrivacyStatus().then(setPrivacy);
     // A new dictation lands in History; refresh the stats with it.
     const unlisten = events.historyUpdatePayload.listen((event) => {
       if (event.payload.action === "added") refresh();
@@ -118,6 +126,32 @@ export const HomePage: React.FC = () => {
                   </div>
                 ))}
               </dl>
+              {privacy && (
+                <div className="mt-4 border-t border-border pt-4 text-sm">
+                  {privacy.on_device ? (
+                    <p className="flex items-center gap-2 font-medium text-emerald-600 dark:text-emerald-400">
+                      <ShieldCheck size={16} className="shrink-0" />
+                      {t("home.privacy.onDevice")}
+                    </p>
+                  ) : (
+                    <p className="flex items-start gap-2 text-amber-700 dark:text-amber-400">
+                      <Cloud size={16} className="mt-0.5 shrink-0" />
+                      <span>
+                        {t("home.privacy.cloud", {
+                          provider: privacy.cloud_provider,
+                        })}{" "}
+                        <button
+                          type="button"
+                          onClick={() => navigateTo("settings", "advanced")}
+                          className="underline underline-offset-2"
+                        >
+                          {t("home.privacy.change")}
+                        </button>
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </aside>
         )}

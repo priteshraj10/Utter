@@ -1601,6 +1601,19 @@ impl ShortcutAction for TranscribeAction {
                                 );
                             }
 
+                            // Privacy: with "keep audio" off, the recording is
+                            // deleted once its text is saved. A note keeps its
+                            // audio (speaker labels and summaries read it).
+                            if wav_saved
+                                && !classification.should_save_note
+                                && !get_settings(&ah).keep_audio
+                            {
+                                let path = hm.get_audio_file_path(&file_name);
+                                if let Err(e) = std::fs::remove_file(&path) {
+                                    warn!("Could not delete the recording: {e}");
+                                }
+                            }
+
                             if processed.final_text.is_empty() {
                                 utils::hide_recording_overlay(&ah);
                                 set_tray_state(&ah, TrayIconState::Idle);

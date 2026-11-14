@@ -674,3 +674,24 @@
 .sidle:not(:hover):not(:focus-visible):not(.notice) .sidle-bars {
   display: none;
 }
+
+/* lock: nothing leaves this Mac (only while the hint is open) */
+.sidle-lock {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  color: #34d399;
+  display: none;
+}
+.sidle:hover .sidle-lock,
+.sidle:focus-visible .sidle-lock {
+  display: block;
+}
+.sidle:hover,
+.sidle:focus-visible {
+  width: 232px;
+}
+.sidle:hover .sidle-label,
+.sidle:focus-visible .sidle-label {
+  max-width: 180px;
+}

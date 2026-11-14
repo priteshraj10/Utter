@@ -57,7 +57,7 @@ const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
 // The resting floating bar: a small window, so it covers as little of the
 // app underneath as possible. Fits the hovered pill (--ov-idle-open-w/h).
-const IDLE_WIDTH: f64 = 230.0;
+const IDLE_WIDTH: f64 = 250.0;
 const IDLE_HEIGHT: f64 = 40.0;
 
 /// Overlay window size (logical) for a given UI state.

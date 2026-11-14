@@ -85,6 +85,8 @@ const RecordingOverlay: React.FC = () => {
   const osType = useOsType();
   // The dictate shortcut, shown on the resting bar ("Click or hold fn…").
   const [dictateKey, setDictateKey] = useState<string | null>(null);
+  // Nothing leaves this Mac: shown as a lock on the resting bar's hint.
+  const [onDevice, setOnDevice] = useState(false);
 
   useEffect(() => {
     const setupEventListeners = async () => {
@@ -112,6 +114,10 @@ const RecordingOverlay: React.FC = () => {
             const binding =
               settings.data.bindings?.transcribe?.current_binding ?? null;
             setDictateKey(binding);
+            commands
+              .getPrivacyStatus()
+              .then((p) => setOnDevice(p.on_device))
+              .catch(() => setOnDevice(false));
             if (settings.data.translate_to_english) {
               setModeBadge(t("overlay.modes.translate"));
             } else {
@@ -416,6 +422,30 @@ const RecordingOverlay: React.FC = () => {
             <i />
           </span>
           <span className="sidle-label">{notice ?? idleHint}</span>
+          {onDevice && !notice && (
+            <svg
+              className="sidle-lock"
+              viewBox="0 0 16 16"
+              role="img"
+              aria-label={t("overlay.onDevice")}
+            >
+              <title>{t("overlay.onDevice")}</title>
+              <rect
+                x="3.5"
+                y="7"
+                width="9"
+                height="7"
+                rx="1.5"
+                fill="currentColor"
+              />
+              <path
+                d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            </svg>
+          )}
         </button>
       </div>
     );

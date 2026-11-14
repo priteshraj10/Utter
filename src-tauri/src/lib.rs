@@ -793,6 +793,8 @@ pub fn run(cli_args: CliArgs) {
             commands::utter::set_app_styles,
             commands::utter::change_auto_cleanup_setting,
             commands::utter::change_whisper_mode_setting,
+            commands::utter::change_keep_audio_setting,
+            commands::utter::get_privacy_status,
             commands::utter::transform_text,
             commands::utter::learn_words_from_edit,
             commands::utter::get_frontmost_app,

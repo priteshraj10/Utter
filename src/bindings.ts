@@ -902,6 +902,17 @@ async changeWhisperModeSetting(enabled: boolean) : Promise<Result<null, string>>
     else return { status: "error", error: e  as any };
 }
 },
+async changeKeepAudioSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_keep_audio_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getPrivacyStatus() : Promise<PrivacyStatus> {
+    return await TAURI_INVOKE("get_privacy_status");
+},
 async transformText(text: string, instruction: string) : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transform_text", { text, instruction }) };
@@ -1446,7 +1457,12 @@ prefer_builtin_mic?: boolean;
  * Run AI cleanup on every dictation, not only the post-processing
  * shortcut. Needs post-processing to be enabled with a provider.
  */
-auto_cleanup?: boolean; whisper_mode?: boolean; voice_commands?: boolean; context_awareness?: boolean; snippets?: Snippet[]; app_styles?: AppStyle[] }
+auto_cleanup?: boolean; whisper_mode?: boolean; voice_commands?: boolean; context_awareness?: boolean; snippets?: Snippet[]; app_styles?: AppStyle[]; 
+/**
+ * Keep each dictation's audio recording after it is typed. Off: the
+ * recording is deleted as soon as the text is saved.
+ */
+keep_audio?: boolean }
 export type ScreenContext = { app_name: string; bundle_id: string | null; window_title: string | null; document_url: string | null; before_text: string | null; selected_text: string | null; after_text: string | null; proper_nouns: string[]; ide_files: string[]; clickable_elements: string[] }
 /**
  * Per-app writing style: while `app` is frontmost, AI cleanup uses the
@@ -1671,6 +1687,22 @@ export type PostProcessApiFormat =
  * Anthropic Messages (`/messages`)
  */
 "anthropic"
+/**
+ * Where your words go: on this Mac only, or also to a cloud AI provider.
+ */
+export type PrivacyStatus = { 
+/**
+ * True when nothing you say or type is sent off this computer.
+ */
+on_device: boolean; 
+/**
+ * The cloud AI provider's name when text is sent to one.
+ */
+cloud_provider: string | null; 
+/**
+ * Whether audio recordings are kept after typing.
+ */
+keeps_audio: boolean }
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean; api_format?: PostProcessApiFormat }
 /**
  * Recording phase events for windows that follow along (onboarding's Try it).

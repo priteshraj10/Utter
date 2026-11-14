@@ -933,6 +933,13 @@
       "general": "General",
       "advanced": "Advanced",
       "about": "About"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "keepAudio": {
+        "label": "Keep audio recordings",
+        "description": "Off: each recording is deleted as soon as its text is saved, so only the words stay. Voice notes keep their audio."
+      }
     }
   },
   "footer": {
@@ -1012,7 +1019,8 @@
       "silent": "Your mic is silent"
     },
     "stop": "Stop and type",
-    "idleHintKey": "Click or hold {{key}} to dictate"
+    "idleHintKey": "Click or hold {{key}} to dictate",
+    "onDevice": "On this Mac"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",
@@ -1229,6 +1237,11 @@
       "streak_one": "day streak",
       "streak_other": "day streak",
       "streak": "day streak"
+    },
+    "privacy": {
+      "onDevice": "Everything stays on this Mac",
+      "cloud": "AI cleanup sends text to {{provider}}",
+      "change": "Change"
     }
   },
   "app": {
