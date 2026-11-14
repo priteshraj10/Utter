@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utter — Local-First AI Voice Dictation & Smart Notes</title>
+  <meta name="description" content="Local-first AI voice dictation, meeting call recording, and smart notes for macOS, Windows, and Linux. 100% private, offline Whisper speech recognition." />
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            zinc: {
+              950: '#09090b',
+              900: '#121215',
+              850: '#18181b',
+              800: '#27272a',
+              700: '#3f3f46',
+            },
+            brand: {
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-wave {
+      0%, 100% { height: 8px; opacity: 0.4; }
+      50% { height: 26px; opacity: 1; }
+    }
+    .wave-bar {
+      animation: pulse-wave 1.2s ease-in-out infinite;
+    }
+    .wave-bar:nth-child(1) { animation-delay: 0.1s; }
+    .wave-bar:nth-child(2) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.6s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.8s; }
+    .wave-bar:nth-child(6) { animation-delay: 0.4s; }
+    .wave-bar:nth-child(7) { animation-delay: 0.7s; }
+    .wave-bar:nth-child(8) { animation-delay: 0.5s; }
+    .glass {
+      background: rgba(24, 24, 27, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-pill {
+      background: rgba(18, 18, 21, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 30px -10px rgba(99, 102, 241, 0.3);
+    }
+    .glow-bg {
+      background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15) 0%, rgba(9, 9, 11, 0) 70%);
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-brand-500/30 selection:text-white">
+
+  <!-- Glow Background -->
+  <div class="fixed inset-0 glow-bg pointer-events-none z-0"></div>
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-50 glass border-b border-zinc-800/60 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3 group">
+        <img src="icon.png" alt="Utter Logo" class="w-8 h-8 rounded-lg shadow-md group-hover:scale-105 transition-transform" />
+        <span class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          Utter
+          <span class="text-[10px] font-mono uppercase bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded border border-zinc-700">v0.9.8</span>
+        </span>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#shortcuts" class="hover:text-white transition-colors">Shortcuts</a>
+        <a href="#meetings" class="hover:text-white transition-colors">Meeting Recording</a>
+        <a href="#comparison" class="hover:text-white transition-colors">Comparison</a>
+        <a href="#downloads" class="hover:text-white transition-colors">Downloads</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/priteshraj10/Utter" target="_blank" rel="noopener noreferrer" 
+           class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
+        <a href="#downloads" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all">
+          Get Utter
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative pt-20 pb-24 md:pt-32 md:pb-36 overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 text-center relative z-10">
+      
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800 text-indigo-400 mb-8 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+        <span class="w-2 h-2 rounded-full bg-emerald-500 -ml-4"></span>
+        Open-Source Wispr Flow Alternative • 100% Offline & Private
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
+        Voice dictation that writes at the speed of <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-200">thought</span>.
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Speak naturally into any app. Utter removes filler words, adapts writing tone per application, transcribes mixed English & Hindi seamlessly, and records meetings with zero audio uploaded to the cloud.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <a id="hero-download-btn" href="#downloads" class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-3 transition-all hover:scale-[1.02]">
+          <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+            <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z"/>
+            <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/>
+          </svg>
+          <span id="hero-download-text">Download for macOS</span>
+        </a>
+        <a href="#features" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-sm text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-all flex items-center justify-center gap-2">
+          Explore Features
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </a>
+      </div>
+
+      <!-- Interactive Floating Bar Showcase -->
+      <div class="relative max-w-xl mx-auto">
+        <div class="glass-pill rounded-full p-3.5 px-6 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+            <span class="text-xs font-mono font-medium text-zinc-300">LISTENING</span>
+          </div>
+
+          <!-- Animated Audio Waveform -->
+          <div class="flex items-center gap-1.5 h-7">
+            <span class="w-1 bg-indigo-500 rounded-full wave-bar"></span>
+            <span class="w-1 bg-indigo-400 rounded-full wave-bar"></span>
+            <span class="w-1 bg-indigo-300 rounded-full wave-bar"></span>
+            <span class="w-1 bg-violet-400 rounded-full wave-bar"></span>
+            <span class="w-1 bg-indigo-400 rounded-full wave-bar"></span>
+            <span class="w-1 bg-indigo-500 rounded-full wave-bar"></span>
+            <span class="w-1 bg-indigo-300 rounded-full wave-bar"></span>
+            <span class="w-1 bg-violet-500 rounded-full wave-bar"></span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-md">
+              154 WPM
+            </span>
+            <button class="w-6 h-6 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center text-xs transition-colors" title="Cancel">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <p class="mt-4 text-xs font-mono text-zinc-500">
+          Wispr Flow–style floating bar • Hold <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">fn</kbd> to speak, release to paste
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section id="features" class="py-24 border-t border-zinc-800/80 bg-zinc-900/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-xs font-mono uppercase tracking-wider text-indigo-400 mb-3">Engineered for Performance</h2>
+        <p class="text-3xl sm:text-4xl font-bold tracking-tight text-white">
+          Everything you love about Wispr Flow, completely local and open-source.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Card 1 -->
+        <div class="glass p-7 rounded-2xl relative group hover:border-zinc-700 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-5">
+            🎙️
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Wispr Flow–Style Floating Bar</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed">
+            A minimal, distraction-free floating pill at rest that expands on hotkey. Includes real-time audio waveforms, live WPM typing metrics, and instant cancel.
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="glass p-7 rounded-2xl relative group hover:border-zinc-700 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400 flex items-center justify-center mb-5">
+            📞
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">System Call & Meeting Recording</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed">
+            Record Zoom, Teams, Meet, and browser calls in Notes. Utter captures both your microphone and computer audio natively using CoreAudio taps without screen recording permissions.
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="glass p-7 rounded-2xl relative group hover:border-zinc-700 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-5">
+            🔒
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">100% Offline & Zero Cloud Lock-in</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed">
+            Powered by Whisper (Small/Medium/Turbo/Large) and Silero VAD. Accelerated by Metal on Apple Silicon and Vulkan on Windows/Linux. Zero raw audio leaves your computer.
+          </p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="glass p-7 rounded-2xl relative group hover:border-zinc-700 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-amber-600/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-5">
+            🇮🇳
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Mixed Hindi + English (Hinglish)</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed">
+            Speaks your language. Transcribes natural code-switching seamlessly without garbled phonetics or unwanted translation into pure English.
+          </p>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="glass p-7 rounded-2xl relative group hover:border-zinc-700 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-sky-600/10 border border-sky-500/20 text-sky-400 flex items-center justify-center mb-5">
+            🎯
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Context-Aware Tone Adaptation</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed">
+            Utter adapts writing tone according to the active frontmost app: casual for Slack, polished for Mail, structured for Notion, and technical for VS Code & Cursor.
+          </p>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="glass p-7 rounded-2xl relative group hover:border-zinc-700 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-pink-600/10 border border-pink-500/20 text-pink-400 flex items-center justify-center mb-5">
+            🍏
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Apple Intelligence & Local LLMs</h3>
+          <p class="text-sm text-zinc-400 leading-relaxed">
+            Runs natively on Apple Silicon with Apple Intelligence integration. Also supports Ollama, Groq, Anthropic, OpenAI, OpenRouter, and custom local endpoints.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Shortcuts Section -->
+  <section id="shortcuts" class="py-24 border-t border-zinc-800/80">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-12">
+        <h2 class="text-xs font-mono uppercase tracking-wider text-indigo-400 mb-3">Fast by Default</h2>
+        <p class="text-3xl font-bold tracking-tight text-white">Default Keyboard Shortcuts</p>
+      </div>
+
+      <div class="glass rounded-2xl overflow-hidden border border-zinc-800 shadow-xl">
+        <table class="w-full text-left text-sm text-zinc-300">
+          <thead class="bg-zinc-900/80 text-xs font-mono uppercase text-zinc-400 border-b border-zinc-800">
+            <tr>
+              <th class="px-6 py-4">Action</th>
+              <th class="px-6 py-4">macOS</th>
+              <th class="px-6 py-4">Windows / Linux</th>
+              <th class="px-6 py-4">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800/60 font-sans">
+            <tr class="hover:bg-zinc-900/40 transition-colors">
+              <td class="px-6 py-4 font-semibold text-white">Dictate</td>
+              <td class="px-6 py-4 font-mono text-indigo-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">fn</kbd> or <kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">⌥Space</kbd></td>
+              <td class="px-6 py-4 font-mono text-zinc-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">Ctrl+Space</kbd></td>
+              <td class="px-6 py-4 text-zinc-400">Hold to speak, release to type into active app</td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40 transition-colors">
+              <td class="px-6 py-4 font-semibold text-white">Command Mode</td>
+              <td class="px-6 py-4 font-mono text-indigo-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">⌃⌥Space</kbd></td>
+              <td class="px-6 py-4 font-mono text-zinc-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">Ctrl+Alt+Space</kbd></td>
+              <td class="px-6 py-4 text-zinc-400">Rewrite last dictation or edit selected text by voice</td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40 transition-colors">
+              <td class="px-6 py-4 font-semibold text-white">Voice Notes & Meetings</td>
+              <td class="px-6 py-4 font-mono text-indigo-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">⌃⌥N</kbd></td>
+              <td class="px-6 py-4 font-mono text-zinc-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">Ctrl+Alt+N</kbd></td>
+              <td class="px-6 py-4 text-zinc-400">Record meeting audio directly into smart Notes</td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40 transition-colors">
+              <td class="px-6 py-4 font-semibold text-white">AI Post-Process</td>
+              <td class="px-6 py-4 font-mono text-indigo-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">⌥⇧Space</kbd></td>
+              <td class="px-6 py-4 font-mono text-zinc-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">Ctrl+Shift+Space</kbd></td>
+              <td class="px-6 py-4 text-zinc-400">Dictate with custom AI cleanup prompt</td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40 transition-colors">
+              <td class="px-6 py-4 font-semibold text-white">Paste Last Transcript</td>
+              <td class="px-6 py-4 font-mono text-indigo-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">⌃⌘V</kbd></td>
+              <td class="px-6 py-4 font-mono text-zinc-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">Ctrl+Win+V</kbd></td>
+              <td class="px-6 py-4 text-zinc-400">Re-paste the most recent dictation</td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40 transition-colors">
+              <td class="px-6 py-4 font-semibold text-white">Copy Last Transcript</td>
+              <td class="px-6 py-4 font-mono text-indigo-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">⌃⌘C</kbd></td>
+              <td class="px-6 py-4 font-mono text-zinc-400"><kbd class="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">Ctrl+Win+C</kbd></td>
+              <td class="px-6 py-4 text-zinc-400">Copy the most recent dictation to clipboard</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-center text-xs text-zinc-500 mt-4">All hotkeys can be changed anytime in Settings (Push-to-Talk, Tap-to-Toggle, or Hybrid).</p>
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section id="comparison" class="py-24 border-t border-zinc-800/80 bg-zinc-900/30">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-xs font-mono uppercase tracking-wider text-indigo-400 mb-3">Honest Comparison</h2>
+        <p class="text-3xl font-bold tracking-tight text-white">Why Choose Utter?</p>
+      </div>
+
+      <div class="glass rounded-2xl overflow-x-auto border border-zinc-800">
+        <table class="w-full text-left text-sm text-zinc-300">
+          <thead class="bg-zinc-900/90 text-xs font-mono uppercase text-zinc-400 border-b border-zinc-800">
+            <tr>
+              <th class="px-6 py-4">Capability</th>
+              <th class="px-6 py-4 text-indigo-400 font-bold">Utter (Open Source)</th>
+              <th class="px-6 py-4">Wispr Flow</th>
+              <th class="px-6 py-4">System Dictation</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800/60 font-sans">
+            <tr>
+              <td class="px-6 py-4 font-semibold text-white">Cloud Privacy</td>
+              <td class="px-6 py-4 text-emerald-400 font-medium">100% Local / Zero Audio Sent</td>
+              <td class="px-6 py-4 text-zinc-400">Cloud servers required</td>
+              <td class="px-6 py-4 text-zinc-400">Variable / Cloud</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-semibold text-white">License & Cost</td>
+              <td class="px-6 py-4 text-emerald-400 font-medium">Free & Open Source (MIT)</td>
+              <td class="px-6 py-4 text-zinc-400">$12 - $15 / month</td>
+              <td class="px-6 py-4 text-zinc-400">Free with OS</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-semibold text-white">System Call Recording</td>
+              <td class="px-6 py-4 text-emerald-400 font-medium">Included (Teams, Zoom, Meet)</td>
+              <td class="px-6 py-4 text-red-400">No</td>
+              <td class="px-6 py-4 text-red-400">No</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-semibold text-white">Mixed Hinglish Code-Switching</td>
+              <td class="px-6 py-4 text-emerald-400 font-medium">Native & preserved</td>
+              <td class="px-6 py-4 text-amber-400">Partial / English bias</td>
+              <td class="px-6 py-4 text-red-400">Fails / garbled</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-semibold text-white">Floating Pill UI</td>
+              <td class="px-6 py-4 text-emerald-400 font-medium">Minimal, real-time wave & WPM</td>
+              <td class="px-6 py-4 text-emerald-400">Yes</td>
+              <td class="px-6 py-4 text-red-400">No</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-semibold text-white">Local LLM Cleanups</td>
+              <td class="px-6 py-4 text-emerald-400 font-medium">Apple Intel. + Ollama + Groq</td>
+              <td class="px-6 py-4 text-zinc-400">Proprietary Cloud</td>
+              <td class="px-6 py-4 text-red-400">No formatting</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Downloads Section -->
+  <section id="downloads" class="py-24 border-t border-zinc-800/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-xs font-mono uppercase tracking-wider text-indigo-400 mb-3">Get Started</h2>
+        <p class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+          Download Utter for Your Platform
+        </p>
+        <p class="text-sm text-zinc-400">
+          All releases are built from source and hosted on GitHub Releases.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- macOS Card -->
+        <div class="glass p-8 rounded-2xl border border-zinc-800 flex flex-col justify-between hover:border-indigo-500/40 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-2xl">🍏</span>
+              <span class="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">macOS 12+</span>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">macOS</h3>
+            <p class="text-sm text-zinc-400 mb-6">Metal GPU acceleration, Apple Intelligence support, CoreAudio call capture.</p>
+          </div>
+          <div class="space-y-2">
+            <a href="https://github.com/priteshraj10/Utter/releases/latest" 
+               class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors">
+              Download DMG (Apple Silicon)
+            </a>
+            <a href="https://github.com/priteshraj10/Utter/releases/latest" 
+               class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+              Download DMG (Intel x86_64)
+            </a>
+          </div>
+        </div>
+
+        <!-- Windows Card -->
+        <div class="glass p-8 rounded-2xl border border-zinc-800 flex flex-col justify-between hover:border-indigo-500/40 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-2xl">🪟</span>
+              <span class="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">Windows 10 / 11</span>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Windows</h3>
+            <p class="text-sm text-zinc-400 mb-6">Vulkan GPU acceleration, installer (.exe) and enterprise (.msi) bundles.</p>
+          </div>
+          <div class="space-y-2">
+            <a href="https://github.com/priteshraj10/Utter/releases/latest" 
+               class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors">
+              Download Setup (x64)
+            </a>
+            <a href="https://github.com/priteshraj10/Utter/releases/latest" 
+               class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+              Download Setup (ARM64)
+            </a>
+          </div>
+        </div>
+
+        <!-- Linux Card -->
+        <div class="glass p-8 rounded-2xl border border-zinc-800 flex flex-col justify-between hover:border-indigo-500/40 transition-all">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-2xl">🐧</span>
+              <span class="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">Ubuntu / Fedora / Arch</span>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Linux</h3>
+            <p class="text-sm text-zinc-400 mb-6">OpenBLAS and Vulkan acceleration, AppImage, DEB, and RPM packages.</p>
+          </div>
+          <div class="space-y-2">
+            <a href="https://github.com/priteshraj10/Utter/releases/latest" 
+               class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors">
+              Download AppImage (x86_64)
+            </a>
+            <a href="https://github.com/priteshraj10/Utter/releases/latest" 
+               class="block w-full py-2.5 px-4 rounded-xl text-center text-xs font-semibold text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+              Download .deb / .rpm
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="mt-12 text-center">
+        <a href="https://github.com/priteshraj10/Utter/releases" target="_blank" rel="noopener noreferrer" 
+           class="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors">
+          Browse all releases and changelogs on GitHub Releases →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-800 py-12 bg-zinc-950 text-xs text-zinc-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <img src="icon.png" alt="Utter Icon" class="w-6 h-6 rounded" />
+        <span>Utter — Open-source desktop speech dictation & smart notes.</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <span>MIT License</span>
+        <span>•</span>
+        <a href="https://github.com/cjpais/Handy" target="_blank" rel="noopener" class="hover:text-zinc-300 transition-colors">Built on Handy</a>
+        <span>•</span>
+        <a href="https://github.com/priteshraj10/Utter" target="_blank" rel="noopener" class="hover:text-zinc-300 transition-colors">GitHub Repository</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Platform detection for dynamic hero download CTA
+    (function() {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const heroBtn = document.getElementById('hero-download-btn');
+      const heroText = document.getElementById('hero-download-text');
+      
+      if (userAgent.indexOf('mac') !== -1) {
+        heroText.textContent = 'Download for macOS (Apple Silicon)';
+        heroBtn.href = 'https://github.com/priteshraj10/Utter/releases/latest';
+      } else if (userAgent.indexOf('win') !== -1) {
+        heroText.textContent = 'Download for Windows';
+        heroBtn.href = 'https://github.com/priteshraj10/Utter/releases/latest';
+      } else if (userAgent.indexOf('linux') !== -1) {
+        heroText.textContent = 'Download for Linux (.AppImage)';
+        heroBtn.href = 'https://github.com/priteshraj10/Utter/releases/latest';
+      }
+    })();
+  </script>
+</body>
+</html>
