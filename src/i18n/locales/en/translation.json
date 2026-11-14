@@ -1236,7 +1236,9 @@
       "wpm": "wpm",
       "streak_one": "day streak",
       "streak_other": "day streak",
-      "streak": "day streak"
+      "streak": "day streak",
+      "seconds": "{{value}}s",
+      "latency": "to type"
     },
     "privacy": {
       "onDevice": "Everything stays on this Mac",

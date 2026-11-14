@@ -62,6 +62,9 @@ pub struct UsageStats {
     pub top_apps: Vec<AppUsage>,
     /// Words per day for the last 14 days, oldest first (`YYYY-MM-DD`).
     pub daily_words: Vec<DailyWords>,
+    /// Typical seconds from letting go of the key to the text being typed
+    /// (median of the last 50 dictations); `None` before any were timed.
+    pub typical_latency_seconds: Option<f64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -74,6 +77,20 @@ pub struct AppUsage {
 pub struct DailyWords {
     pub day: String,
     pub words: i64,
+}
+
+/// The middle value (mean of the two middle ones for an even count).
+fn median(mut values: Vec<f64>) -> Option<f64> {
+    if values.is_empty() {
+        return None;
+    }
+    values.sort_by(|a, b| a.total_cmp(b));
+    let mid = values.len() / 2;
+    Some(if values.len() % 2 == 0 {
+        (values[mid - 1] + values[mid]) / 2.0
+    } else {
+        values[mid]
+    })
 }
 
 /// Typing speed the time-saved figure compares against.
@@ -219,6 +236,17 @@ impl HistoryManager {
             [],
         )?;
 
+        // Time from letting go of the key to the text being typed, per
+        // dictation; a new table, so likewise not a migration.
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS latency_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp INTEGER NOT NULL,
+                seconds REAL NOT NULL
+            )",
+            [],
+        )?;
+
         // Not a migration: a higher user_version makes released builds refuse
         // the database, while an extra nullable column is invisible to them.
         for column in ADDED_COLUMNS {
@@ -343,6 +371,18 @@ impl HistoryManager {
         Ok(())
     }
 
+    /// Records how long a dictation took to type after the key was released.
+    pub fn record_latency(&self, seconds: f64) -> Result<()> {
+        if !seconds.is_finite() || seconds < 0.0 {
+            return Ok(());
+        }
+        self.get_connection()?.execute(
+            "INSERT INTO latency_events (timestamp, seconds) VALUES (?1, ?2)",
+            params![Utc::now().timestamp(), seconds],
+        )?;
+        Ok(())
+    }
+
     pub fn usage_stats(&self) -> Result<UsageStats> {
         let conn = self.get_connection()?;
         Self::usage_stats_with_conn(&conn, Local::now())
@@ -434,6 +474,14 @@ impl HistoryManager {
             rows.collect::<rusqlite::Result<Vec<_>>>()?
         };
 
+        let typical_latency_seconds = {
+            let mut stmt = conn.prepare(
+                "SELECT seconds FROM latency_events ORDER BY timestamp DESC, id DESC LIMIT 50",
+            )?;
+            let rows = stmt.query_map([], |r| r.get::<_, f64>(0))?;
+            median(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+        };
+
         let average_wpm = if total_audio_seconds > 0.0 {
             total_words as f64 / (total_audio_seconds / 60.0)
         } else {
@@ -453,6 +501,7 @@ impl HistoryManager {
             streak_days,
             top_apps,
             daily_words,
+            typical_latency_seconds,
         })
     }
 
@@ -1121,6 +1170,13 @@ mod tests {
     }
 
     #[test]
+    fn median_of_latencies() {
+        assert_eq!(super::median(vec![]), None);
+        assert_eq!(super::median(vec![0.9, 0.3, 0.5]), Some(0.5));
+        assert_eq!(super::median(vec![0.4, 0.2, 0.8, 0.6]), Some(0.5));
+    }
+
+    #[test]
     fn usage_stats_totals_and_streak() {
         use chrono::TimeZone;
         let conn = Connection::open_in_memory().unwrap();
@@ -1132,6 +1188,11 @@ mod tests {
                 audio_seconds REAL NOT NULL,
                 mode TEXT NOT NULL,
                 app TEXT
+            );
+            CREATE TABLE latency_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp INTEGER NOT NULL,
+                seconds REAL NOT NULL
             );",
         )
         .unwrap();

@@ -1898,7 +1898,12 @@ streak_days: number; top_apps: AppUsage[];
 /**
  * Words per day for the last 14 days, oldest first (`YYYY-MM-DD`).
  */
-daily_words: DailyWords[] }
+daily_words: DailyWords[]; 
+/**
+ * Typical seconds from letting go of the key to the text being typed
+ * (median of the last 50 dictations); `None` before any were timed.
+ */
+typical_latency_seconds: number | null }
 export type VadBackend = "silero" | "earshot"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 

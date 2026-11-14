@@ -56,12 +56,20 @@ fn emit_transcription_complete(
     sample_count: usize,
     stop_time: Instant,
 ) {
+    let typed = matches!(outcome, TranscriptionOutcome::Typed);
     let event = TranscriptionCompleteEvent {
         outcome,
         audio_seconds: sample_count as f64
             / crate::audio_toolkit::constants::WHISPER_SAMPLE_RATE as f64,
         wait_seconds: stop_time.elapsed().as_secs_f64(),
     };
+    if typed {
+        if let Some(hm) = app.try_state::<Arc<HistoryManager>>() {
+            if let Err(e) = hm.record_latency(event.wait_seconds) {
+                warn!("Failed to record dictation latency: {e}");
+            }
+        }
+    }
     if let Err(e) = event.emit(app) {
         warn!("Failed to emit transcription complete: {e}");
     }

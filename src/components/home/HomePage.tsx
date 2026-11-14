@@ -53,6 +53,16 @@ export const HomePage: React.FC = () => {
           value: stats.streak_days.toLocaleString(),
           label: t("home.stats.streak", { count: stats.streak_days }),
         },
+        ...(stats.typical_latency_seconds != null
+          ? [
+              {
+                value: t("home.stats.seconds", {
+                  value: stats.typical_latency_seconds.toFixed(1),
+                }),
+                label: t("home.stats.latency"),
+              },
+            ]
+          : []),
       ]
     : [];
 
@@ -116,7 +126,7 @@ export const HomePage: React.FC = () => {
         {stats && (
           <aside className="order-first lg:order-none">
             <div className="rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-0">
-              <dl className="grid grid-cols-3 gap-4 lg:grid-cols-1">
+              <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-1">
                 {statItems.map(({ value, label }) => (
                   <div key={label} className="flex items-baseline gap-2">
                     <dd className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
