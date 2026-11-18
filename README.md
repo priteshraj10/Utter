@@ -12,7 +12,7 @@ Utter is an open-source, private desktop dictation studio built with Tauri 2.x, 
 
 - **Wispr Flow–Style Floating Bar**: Minimal, distraction-free floating pill at rest that expands on hover or hotkey. Features live audio waveforms, instant cancel, and median typing speed metrics.
 - **System Call & Meeting Recording (Teams, Zoom, Meet)**: Capture both your microphone and computer audio in Notes so multi-participant meetings and browser calls include every speaker. Includes speaker diarization and automated summary action items.
-- **Offline Speech Recognition**: Local transcription powered by **Whisper** (Small / Medium / Turbo / Large with Apple Silicon Metal & Vulkan GPU acceleration) and **Parakeet**, paired with **Silero VAD** for voice activity detection.
+- **Offline Speech Recognition**: Local transcription powered by **NVIDIA** speech models only (**Parakeet**, **Canary**, **Nemotron**) with Apple Silicon Metal & Vulkan GPU acceleration, paired with **Silero VAD** for voice activity detection.
 - **Mixed Hindi + English (Hinglish) Support**: Transcribes natural multilingual code-switching seamlessly without transliteration errors or unwanted translation into pure English.
 - **Context-Aware AI Cleanup & Tone Adaptation**: Strips filler words (_um, uh, like_), repairs self-corrections, and matches writing style (**Formal**, **Casual**, **Very Casual**, **Concise**, **Email**, **Bullet Notes**, **Code & Technical**) according to the active frontmost app (_Slack, Mail, Notion, VS Code, Cursor, Terminal_).
 - **Apple Intelligence & Local Intelligence**: On Apple Silicon Macs, uses on-device Apple Intelligence natively without API keys or cloud dependencies. Also supports Ollama, Groq, Anthropic, OpenAI, OpenRouter, and custom endpoints.

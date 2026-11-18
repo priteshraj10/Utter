@@ -3,6 +3,7 @@
  * one spelling per language (no/nb → nb), compared and saved as is.
  */
 import { catalog, languageIdentity } from "@handy-computer/models";
+import { OFFERED_ASR } from "@/lib/models/catalog";
 
 /** `native` is the endonym, never translated. UI names: `languageName`. */
 export interface Language {
@@ -44,9 +45,9 @@ const endonym = (code: string): string => {
     : name;
 };
 
-// How many of the catalog's speech models hear each language.
+// How many of the offered (NVIDIA) speech models hear each language.
 const SUPPORT = new Map<string, number>();
-for (const model of catalog.models.filter((m) => m.role === "asr"))
+for (const model of OFFERED_ASR)
   for (const code of new Set(model.languages.map(languageIdentity)))
     SUPPORT.set(code, (SUPPORT.get(code) ?? 0) + 1);
 

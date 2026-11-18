@@ -773,7 +773,8 @@ struct RetiredOnnxModel {
     /// or for GigaAM before #1088, a single `.onnx` file.
     disk_names: &'static [&'static str],
     size_mb: u64,
-    /// Hugging Face repo of the catalog model that replaces it.
+    /// Hugging Face repo of the catalog model that replaces it. Always an
+    /// NVIDIA model (the only ones offered), covering the old model's languages.
     replacement_repo: &'static str,
 }
 
@@ -797,42 +798,42 @@ const RETIRED_ONNX_MODELS: &[RetiredOnnxModel] = &[
         name: "Moonshine Base",
         disk_names: &["moonshine-base"],
         size_mb: 55,
-        replacement_repo: "handy-computer/moonshine-base-gguf",
+        replacement_repo: "handy-computer/parakeet-tdt_ctc-110m-gguf",
     },
     RetiredOnnxModel {
         id: "moonshine-tiny-streaming-en",
         name: "Moonshine V2 Tiny",
         disk_names: &["moonshine-tiny-streaming-en"],
         size_mb: 31,
-        replacement_repo: "handy-computer/moonshine-streaming-tiny-gguf",
+        replacement_repo: "handy-computer/parakeet-tdt_ctc-110m-gguf",
     },
     RetiredOnnxModel {
         id: "moonshine-small-streaming-en",
         name: "Moonshine V2 Small",
         disk_names: &["moonshine-small-streaming-en"],
         size_mb: 99,
-        replacement_repo: "handy-computer/moonshine-streaming-small-gguf",
+        replacement_repo: "handy-computer/nemotron-speech-streaming-en-0.6b-gguf",
     },
     RetiredOnnxModel {
         id: "moonshine-medium-streaming-en",
         name: "Moonshine V2 Medium",
         disk_names: &["moonshine-medium-streaming-en"],
         size_mb: 192,
-        replacement_repo: "handy-computer/moonshine-streaming-medium-gguf",
+        replacement_repo: "handy-computer/nemotron-speech-streaming-en-0.6b-gguf",
     },
     RetiredOnnxModel {
         id: "sense-voice-int8",
         name: "SenseVoice",
         disk_names: &["sense-voice-int8"],
         size_mb: 152,
-        replacement_repo: "handy-computer/SenseVoiceSmall-gguf",
+        replacement_repo: "handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf",
     },
     RetiredOnnxModel {
         id: "gigaam-v3-e2e-ctc",
         name: "GigaAM v3",
         disk_names: &["giga-am-v3-int8", "giga-am-v3.int8.onnx"],
         size_mb: 151,
-        replacement_repo: "handy-computer/gigaam-v3-e2e-ctc-gguf",
+        replacement_repo: "handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf",
     },
     RetiredOnnxModel {
         id: "canary-180m-flash",
@@ -853,7 +854,7 @@ const RETIRED_ONNX_MODELS: &[RetiredOnnxModel] = &[
         name: "Cohere",
         disk_names: &["cohere-int8"],
         size_mb: 1708,
-        replacement_repo: "handy-computer/cohere-transcribe-03-2026-gguf",
+        replacement_repo: "handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf",
     },
 ];
 
@@ -2846,7 +2847,7 @@ mod tests {
 
     #[test]
     fn test_old_q5_is_discovered_and_survives_deleting_all_q8_copies() {
-        let desc = catalog_model("handy-computer/whisper-large-v3-gguf/");
+        let desc = catalog_model("handy-computer/parakeet-tdt-0.6b-v3-gguf/");
         let (repo, revision) = hf_source(desc);
         let q5 = desc.files.iter().find(|f| f.quant == "Q5_K_M").unwrap();
         let q8 = desc.default_file().unwrap();
@@ -3362,17 +3363,17 @@ mod tests {
         // HF repo ids are case-insensitive, so another tool can cache a catalog
         // repo under other casing. On a case-sensitive filesystem only that
         // casing finds the file again, so it must not take the catalog's.
-        let filename = "SenseVoiceSmall-Q8_0.gguf";
-        let folder_repo = "handy-computer/sensevoicesmall-gguf";
+        let filename = "parakeet-tdt-0.6b-v3-Q8_0.gguf";
+        let folder_repo = "handy-computer/Parakeet-TDT-0.6B-v3-gguf";
         assert!(crate::catalog::file_in_catalog(
             filename,
-            Some("handy-computer/SenseVoiceSmall-gguf")
+            Some("handy-computer/parakeet-tdt-0.6b-v3-gguf")
         )
         .is_some());
 
         let cache = TempDir::new().unwrap();
         let path = add_cached_model(cache.path(), folder_repo, "main", filename);
-        write_synthetic_gguf(&path, "sensevoice", &["en", "zh"]);
+        write_synthetic_gguf(&path, "parakeet", &["en", "de"]);
 
         let mut models = HashMap::new();
         ModelManager::discover_hf_cache_models_in(cache.path(), &mut models);

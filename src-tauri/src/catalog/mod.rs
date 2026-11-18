@@ -38,18 +38,40 @@ const MIRRORS: &[&str] = &["https://blob.handy.computer"];
 /// Handy's list order and onboarding set, keyed by catalog id. Kept from the
 /// previous generator until onboarding moves to the package's recommendations.
 /// `(id, rank, recommended)`: rank is the editorial sort position (lower =
-/// higher); recommended is the small badged onboarding subset.
+/// higher); recommended is the small badged onboarding subset. Only NVIDIA
+/// models, in the order they had in the full list.
 const HANDY_RANKING: &[(&str, u32, bool)] = &[
     ("parakeet-unified-en-0.6b", 1, true),
     ("nemotron-3.5-asr-streaming-0.6b", 2, true),
     ("canary-180m-flash", 3, true),
-    ("cohere-transcribe-03-2026", 4, true),
-    ("whisper-medium", 5, true),
-    ("Voxtral-Mini-4B-Realtime-2602", 6, false),
-    ("parakeet-tdt-0.6b-v3", 7, false),
-    ("parakeet-tdt-0.6b-v2", 8, false),
-    ("Qwen3-ASR-0.6B", 9, false),
-    ("Fun-ASR-MLT-Nano-2512", 10, false),
+    ("parakeet-tdt-0.6b-v3", 4, false),
+    ("parakeet-tdt-0.6b-v2", 5, false),
+];
+
+/// The only transcription models Utter offers: NVIDIA's own releases
+/// (Parakeet, Canary, Nemotron), each checked against its model card's
+/// `base_model: nvidia/...`. Community fine-tunes of them (Parakeet Ultra,
+/// Orukeet, Parakeet Primeline) and other vendors' models are left out.
+/// Keep in sync with `NVIDIA_MODEL_IDS` in src/lib/models/catalog.ts.
+pub const NVIDIA_MODELS: &[&str] = &[
+    "parakeet-unified-en-0.6b",
+    "nemotron-3.5-asr-streaming-0.6b",
+    "nemotron-speech-streaming-en-0.6b",
+    "canary-180m-flash",
+    "canary-1b-v2",
+    "canary-1b",
+    "canary-1b-flash",
+    "canary-qwen-2.5b",
+    "parakeet-tdt-0.6b-v3",
+    "parakeet-tdt-0.6b-v2",
+    "parakeet-tdt-1.1b",
+    "parakeet-tdt_ctc-110m",
+    "parakeet-tdt_ctc-1.1b",
+    "parakeet-ctc-0.6b",
+    "parakeet-ctc-1.1b",
+    "parakeet-rnnt-0.6b",
+    "parakeet-rnnt-1.1b",
+    "multitalker-parakeet-streaming-0.6b-v1",
 ];
 
 #[derive(Deserialize)]
@@ -147,6 +169,7 @@ impl CatalogModel {
     /// Must match `offered_models` in `scripts/mirror_models.py`.
     fn is_offered(&self) -> bool {
         self.role == "asr"
+            && NVIDIA_MODELS.contains(&self.id.as_str())
             && self
                 .default_file()
                 .is_some_and(|file| !file.filename.contains('/'))
@@ -567,8 +590,9 @@ mod tests {
     }
 
     #[test]
-    fn all_flat_asr_models_are_offered_at_the_package_default() {
+    fn all_flat_nvidia_models_are_offered_at_the_package_default() {
         for m in transcription_models()
+            .filter(|m| NVIDIA_MODELS.contains(&m.id.as_str()))
             .filter(|m| m.default_file().is_some_and(|f| !f.filename.contains('/')))
         {
             let id = format!("{}/{}", m.repository, m.default_file().unwrap().filename);
@@ -593,6 +617,23 @@ mod tests {
     fn every_description_is_filled() {
         for d in CATALOG.iter() {
             assert!(!d.description.is_empty(), "{}: empty description", d.id);
+        }
+    }
+
+    #[test]
+    fn only_nvidia_models_are_offered() {
+        for id in NVIDIA_MODELS {
+            let model = transcription_models()
+                .find(|m| m.id == *id)
+                .unwrap_or_else(|| panic!("NVIDIA model {id} is not in the catalog"));
+            assert!(model.is_offered(), "NVIDIA model {id} is not offered");
+        }
+        assert_eq!(CATALOG.len(), NVIDIA_MODELS.len());
+        for family in CATALOG.iter().map(|d| d.id.as_str()) {
+            assert!(
+                !family.contains("whisper") && !family.contains("Qwen3-ASR"),
+                "non-NVIDIA model offered: {family}"
+            );
         }
     }
 

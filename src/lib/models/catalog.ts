@@ -16,9 +16,41 @@ export type { CatalogModel, MachineTier };
 
 const M = catalog.methodology;
 
+/**
+ * The only speech models Utter offers: NVIDIA's own releases (Parakeet,
+ * Canary, Nemotron), each checked against its model card's
+ * `base_model: nvidia/...`. Keep in sync with `NVIDIA_MODELS` in
+ * src-tauri/src/catalog/mod.rs.
+ */
+export const NVIDIA_MODEL_IDS: ReadonlySet<string> = new Set([
+  "parakeet-unified-en-0.6b",
+  "nemotron-3.5-asr-streaming-0.6b",
+  "nemotron-speech-streaming-en-0.6b",
+  "canary-180m-flash",
+  "canary-1b-v2",
+  "canary-1b",
+  "canary-1b-flash",
+  "canary-qwen-2.5b",
+  "parakeet-tdt-0.6b-v3",
+  "parakeet-tdt-0.6b-v2",
+  "parakeet-tdt-1.1b",
+  "parakeet-tdt_ctc-110m",
+  "parakeet-tdt_ctc-1.1b",
+  "parakeet-ctc-0.6b",
+  "parakeet-ctc-1.1b",
+  "parakeet-rnnt-0.6b",
+  "parakeet-rnnt-1.1b",
+  "multitalker-parakeet-streaming-0.6b-v1",
+]);
+
+/** Every speech model Utter offers. */
+export const OFFERED_ASR: CatalogModel[] = catalog.models.filter(
+  (m) => m.role === "asr" && NVIDIA_MODEL_IDS.has(m.id),
+);
+
 /** Curated speech models. */
 export const CURATED_ASR: CatalogModel[] = catalog.curatedModels.filter(
-  (m) => m.role === "asr",
+  (m) => m.role === "asr" && NVIDIA_MODEL_IDS.has(m.id),
 );
 
 /** Measured word (or character) error for one language, in percent. */
